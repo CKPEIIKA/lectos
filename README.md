@@ -19,6 +19,12 @@ lectos-tui [same options] PDF [NOTES.md|NOTES.tex]      # terminal console, Zath
 
 `lectos` has two independent parts: the **projector** (what the audience sees) and the **console** (what you work with: current, projected and next slide, timer, overview, search and scrollable notes). Pick each separately with `--console` / `--projector` or `[ui]` in `options.toml`; flags beat the options file, which beats the entry point's default.
 
+![The wide layout on a big screen: slide with ink and laser, audience and next previews, notes with typeset math, and the filmstrip](docs/screenshots/wide.png)
+
+| Compact layout with the search panel open | What the audience sees |
+|---|---|
+| ![The compact layout for a notebook, with search results above the slides](docs/screenshots/compact.png) | ![The projector window: the slide with the red ink circle](docs/screenshots/projector.png) |
+
 | console \ projector | `gtk` (our window) | `zathura` | `none` |
 |---|---|---|---|
 | `gtk` (default for `lectos`) | everything | slides only | slides only |
@@ -122,7 +128,8 @@ uv run lectos --console tui --projector gtk examples/slides.pdf examples/slides.
 - `lectos/` - import package; see the layer map in `AGENTS.md`
 - `examples/` - sample deck about lectos: Beamer source with notes, compiled PDF, Markdown notes, `options.toml`, `standby.svg`
 - `tests/` - automated tests
-- `docs/README.md` - documentation map
+- `docs/README.md` - documentation map; `docs/screenshots/` - the pictures above
+- `man/` - manual pages (scdoc sources and generated roff)
 - `scripts/quality.sh` - local quality gate
 - `scripts/audit.sh` - optional local dead-code audit
 - `scripts/release_check.sh` - manual distribution and installed-CLI gate
@@ -138,4 +145,12 @@ The gate runs Ruff linting, Ruff formatting checks, Ty, and pytest. Run Vulture 
 
 ## LICENSE
 
-[GNU General Public License v3.0](LICENSE).
+Copyright (C) 2026 the lectos authors.
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License, version 3 only, as published by the Free Software Foundation. It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See [LICENSE](LICENSE) for the full text (SPDX: `GPL-3.0-only`).
+
+Nothing from other projects is bundled. lectos uses, as separate programs or dynamically loaded libraries, GTK 4, libadwaita, PyGObject and pycairo (LGPL), Poppler (GPL), Zathura (zlib), chafa (LGPL), LaTeX and dvipng. The sample deck and the kitty drawing in `examples/` were written for this project and carry the same license.
+
+## MANUAL PAGE
+
+`man/lectos.1` and `man/lectos-tui.1` are short references to the options, keys and files. Read one without installing: `man -l man/lectos.1`. Install for your user (no sudo): `./scripts/install_man.sh`, then `man lectos`. They are written in scdoc (`man/*.scd`); regenerate the roff with `./scripts/build_man.sh`. A test checks that every command-line option is documented and that the roff matches its source.

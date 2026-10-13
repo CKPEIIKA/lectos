@@ -2,6 +2,22 @@
 
 Completed work only. Record meaningful outcomes and validation evidence, newest first.
 
+## 2026-10-13: ultrareview findings fixed
+
+- Ink recovery file: a stroke colour like `#zzzzzz` or `#abc` was accepted and then crashed every redraw and PDF export; colours are now validated as `#rrggbb` when loading.
+- `restore-all` could undo the wrong thing: after `clear-all`, drawing a new stroke (or undoing by hand) on a cleared layer left that layer marked as restorable. Any later change to a layer now cancels its pending restore.
+- Terminal console: `restore-all` was missing from its command table; a test now requires every capability-gated command to be registered or marked GTK-only.
+- Terminal + GTK projector: a startup failure (e.g. `pdfinfo` missing) left the process hanging with the projector window open; it now quits with the error message (checked in a pseudo-terminal).
+- Terminal input: a UTF-8 character split across two reads (long pastes of Russian or German text) was silently dropped; keys are now decoded with an incremental decoder.
+- Each fix has a regression test (250 tests).
+
+## 2026-10-13: license, man pages, screenshots; dark-theme fixes
+
+- `LICENSE` is now the canonical GPL-3.0 text (it carried a kernel-style SPDX preamble); README has the standard notice, a note on third-party software, and the license is `GPL-3.0-only` in `pyproject.toml`.
+- Short man pages `lectos(1)` and `lectos-tui(1)` (scdoc sources + generated roff), `scripts/build_man.sh`, `scripts/install_man.sh` (user-local, no sudo). Tests: every CLI option is documented, the roff matches its source.
+- README screenshots (`docs/screenshots/`: wide layout, compact layout with search open, the audience view) rendered from the real windows in the stock light theme.
+- Found while taking them: formula images in the notes were black on transparent, unreadable on dark themes: they are now compiled in the notes' text colour and recompiled when the theme changes; the running-timer highlight made the timer unreadable in the light theme: it now uses the accent text colour.
+
 ## 2026-10-13: German, schedule in the footer
 
 - German added (`de.po`, `--lang de`, `[ui] language = "de"`, `LANG=de_*`); the i18n tests now run over every catalog file and check that each language has one.
