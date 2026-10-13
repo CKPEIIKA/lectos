@@ -5,11 +5,17 @@ build-backend = "hatchling.build"
 [project]
 name = "lectos"
 version = "0.1.0"
-description = "Presenter console that drives Zathura from Markdown lecture notes."
+description = "Presenter console and projector for PDF slides with Markdown or Beamer lecture notes."
 readme = "README.md"
 requires-python = ">=3.13"
 license = "GPL-3.0-only"
-dependencies = []
+keywords = ["presentation", "presenter", "slides", "pdf", "beamer", "gtk"]
+dependencies = []  # PyGObject, GTK, libadwaita and Poppler come from the system
+
+[project.urls]
+Homepage = "https://github.com/CKPEIIKA/lectos"
+Source = "https://github.com/CKPEIIKA/lectos"
+Issues = "https://github.com/CKPEIIKA/lectos/issues"
 
 [project.scripts]
 lectos = "lectos.cli:main"
