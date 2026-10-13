@@ -198,6 +198,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         for prop in ("default-width", "fullscreened", "maximized"):
             self.connect(f"notify::{prop}", self._on_resized)
         self._apply_layout(force=True)
+        Adw.StyleManager.get_default().connect("notify::dark", lambda *_: GLib.timeout_add(250, self._recompile_math))
 
     def _on_resized(self, *_args: object) -> None:
         """Window size changed: after it settles, pick the layout and realign what depends on the width."""
@@ -753,10 +754,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.timer_icon.set_from_icon_name(
             "media-playback-pause-symbolic" if self.timer.running else "media-playback-start-symbolic"
         )
-        if self.timer.running:
-            self.timer_button.add_css_class("suggested-action")
-        else:
-            self.timer_button.remove_css_class("suggested-action")
+        (self.timer_label.add_css_class if self.timer.running else self.timer_label.remove_css_class)("accent")
         self._apply_layout()
         self._fit_pane()
         self.info.set_label(schedule_summary(self.timer, now, self.deck.view, self.deck.pages))
@@ -1124,14 +1122,31 @@ class ConsoleWindow(Adw.ApplicationWindow):
             return
         self._notes_mtime = mtime
         self._rebuild_notes()
-        threading.Thread(target=self._compile_math, args=(self._sections, mtime), daemon=True).start()
+        threading.Thread(
+            target=self._compile_math, args=(self._sections, mtime, self._math_color()), daemon=True
+        ).start()
 
     def _formulas(self, sections: list[Section]) -> list[mathimg.Formula]:
         spans = [s for sec in sections for s in notes.parse(sec.text)]
         return [mathimg.Formula(s.text, s.style == "display") for s in spans if s.style in ("math", "display")]
 
-    def _compile_math(self, sections: list[Section], mtime: int) -> None:
-        images = mathimg.render(self._formulas(sections))
+    def _math_color(self) -> str:
+        """The notes' current text colour as ``#rrggbb``, so formulas stay readable in light and dark themes."""
+        try:
+            c = self.view.get_color() if self.view is not None else None
+        except (AttributeError, TypeError):
+            c = None
+        if c is None:
+            return mathimg.DEFAULT_FG
+        return "#{:02x}{:02x}{:02x}".format(*(round(v * 255) for v in (c.red, c.green, c.blue)))
+
+    def _recompile_math(self) -> bool:
+        self._notes_mtime = -1  # force a reload so the formulas are compiled in the new colour
+        self.poll_notes()
+        return False
+
+    def _compile_math(self, sections: list[Section], mtime: int, fg: str) -> None:
+        images = mathimg.render(self._formulas(sections), fg=fg)
         GLib.idle_add(self._math_ready, images, mtime)
 
     def _math_ready(self, images: dict[mathimg.Formula, Path], mtime: int) -> bool:

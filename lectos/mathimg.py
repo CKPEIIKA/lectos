@@ -11,6 +11,7 @@ from pathlib import Path
 
 TOOL_TIMEOUT_S = 60.0
 MATH_DPI = 110
+DEFAULT_FG = "#000000"
 MAX_FORMULAS = 400
 MAX_FORMULA_CHARS = 2000
 PREAMBLE = (
@@ -36,13 +37,19 @@ def cache_dir() -> Path:
     return Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "lectos" / "math"
 
 
-def cache_path(formula: Formula, dpi: int = MATH_DPI) -> Path:
-    """Cache file for the formula, keyed by source, preamble and resolution."""
-    digest = hashlib.sha256(f"{PREAMBLE}|{formula.source}|{dpi}".encode()).hexdigest()[:24]
+def cache_path(formula: Formula, dpi: int = MATH_DPI, fg: str = DEFAULT_FG) -> Path:
+    """Cache file for the formula, keyed by source, preamble, resolution and text colour."""
+    digest = hashlib.sha256(f"{PREAMBLE}|{formula.source}|{dpi}|{fg}".encode()).hexdigest()[:24]
     return cache_dir() / f"{digest}.png"
 
 
-def _compile(formulas: list[Formula], dpi: int) -> list[bytes] | None:
+def _rgb(color: str) -> str:
+    """dvipng colour spec for ``#rrggbb``."""
+    r, g, b = (int(color[i : i + 2], 16) / 255 for i in (1, 3, 5))
+    return f"rgb {r:.3f} {g:.3f} {b:.3f}"
+
+
+def _compile(formulas: list[Formula], dpi: int, fg: str) -> list[bytes] | None:
     """Compile formulas into one document; return one PNG per formula, or None on any failure."""
     body = "\\newpage\n".join(f"{f.source}\n" for f in formulas)
     env = {**os.environ, "openin_any": "p", "openout_any": "p"}  # TeX paranoid file access
@@ -51,7 +58,7 @@ def _compile(formulas: list[Formula], dpi: int) -> list[bytes] | None:
         (work / "m.tex").write_text(f"{PREAMBLE}{body}\\end{{document}}\n", encoding="utf-8")
         steps = [
             ["latex", "-interaction=nonstopmode", "-halt-on-error", "-no-shell-escape", "m.tex"],
-            ["dvipng", "-D", str(dpi), "-T", "tight", "-bg", "Transparent", "-o", "p%d.png", "m.dvi"],
+            ["dvipng", "-D", str(dpi), "-T", "tight", "-fg", _rgb(fg), "-bg", "Transparent", "-o", "p%d.png", "m.dvi"],
         ]
         for step in steps:
             try:
@@ -64,19 +71,19 @@ def _compile(formulas: list[Formula], dpi: int) -> list[bytes] | None:
         return [p.read_bytes() for p in pages] if all(p.exists() for p in pages) else None
 
 
-def render(formulas: list[Formula], dpi: int = MATH_DPI) -> dict[Formula, Path]:
-    """Return image files for the formulas that compile. Failures are omitted, never fatal."""
+def render(formulas: list[Formula], dpi: int = MATH_DPI, fg: str = DEFAULT_FG) -> dict[Formula, Path]:
+    """Return image files for the formulas that compile, drawn in colour ``fg``. Failures are omitted, never fatal."""
     unique = [f for f in dict.fromkeys(formulas) if len(f.tex) <= MAX_FORMULA_CHARS][:MAX_FORMULAS]
-    missing = [f for f in unique if not cache_path(f, dpi).exists()]
+    missing = [f for f in unique if not cache_path(f, dpi, fg).exists()]
     if missing:
         cache_dir().mkdir(parents=True, exist_ok=True)
-        batch = _compile(missing, dpi)
+        batch = _compile(missing, dpi, fg)
         groups = [([f], [png]) for f, png in zip(missing, batch, strict=True)] if batch else []
         if not batch:  # one bad formula must not hide the rest: retry individually
             for f in missing:
-                one = _compile([f], dpi)
+                one = _compile([f], dpi, fg)
                 if one:
                     groups.append(([f], one))
         for fs, pngs in groups:
-            cache_path(fs[0], dpi).write_bytes(pngs[0])
-    return {f: cache_path(f, dpi) for f in unique if cache_path(f, dpi).exists()}
+            cache_path(fs[0], dpi, fg).write_bytes(pngs[0])
+    return {f: cache_path(f, dpi, fg) for f in unique if cache_path(f, dpi, fg).exists()}
