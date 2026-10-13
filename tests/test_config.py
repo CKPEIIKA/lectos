@@ -152,3 +152,21 @@ def test_target_accepts_lengths_and_rejects_nonsense(tmp_path: Path) -> None:
     for text in ('[console]\ntarget_min = "soon"\n', "[console]\ntarget_min = 0\n", "[console]\ntarget_min = 2000\n"):
         with pytest.raises(ConfigError, match="target_min"):
             config.load(write(tmp_path, text))
+
+
+def test_a_section_that_is_not_a_table_is_rejected(tmp_path: Path) -> None:
+    with pytest.raises(ConfigError, match="must be a table"):
+        config.load(write(tmp_path, 'blackout = "oops"\n'))
+
+
+def test_oversized_blackout_image_is_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "big.png").write_bytes(b"x" * 100)
+    monkeypatch.setattr(config, "MAX_IMAGE_BYTES", 10)
+    with pytest.raises(ConfigError, match="exceeds"):
+        config.load(write(tmp_path, '[blackout]\nimage = "big.png"\n'))
+
+
+def test_pen_width_bounds_come_from_the_ink_module(tmp_path: Path) -> None:
+    assert config.load(write(tmp_path, "[drawing]\nwidth = 40\n")).drawing.width == 40
+    with pytest.raises(ConfigError, match=r"width must be 1\.\.40"):
+        config.load(write(tmp_path, "[drawing]\nwidth = 41\n"))

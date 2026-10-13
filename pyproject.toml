@@ -18,6 +18,7 @@ lectos-tui = "lectos.cli:main_tui"
 [dependency-groups]
 dev = [
   "pytest>=8",
+  "pytest-cov>=7.1.0",
   "ruff>=0.16.7",
   "ty",
 ]
@@ -37,7 +38,7 @@ exclude = ["build", "dist", "refs"]
 
 # GTK/Poppler bindings are typeless GObject introspection, resolved at runtime only.
 [[tool.ty.overrides]]
-include = ["lectos/pdfdoc.py", "lectos/projector.py", "lectos/console.py", "lectos/app.py", "lectos/inkinput.py", "lectos/tuiglib.py", "tests/test_console_gui.py"]
+include = ["lectos/gtk/*.py", "tests/gtk/*.py"]
 
 [tool.ty.overrides.rules]
 unresolved-import = "ignore"
@@ -45,7 +46,7 @@ unresolved-import = "ignore"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-ra -m 'not slow'"
+addopts = "-ra -m 'not slow' --cov"
 markers = [
   "integration: tests that cross process or external-system boundaries",
   "slow: tests excluded from the normal fast development loop",
@@ -92,14 +93,10 @@ max-statements = 40
 "scripts/**/*.py" = ["C901", "PLR0912", "PLR0915"]
 
 # gi.require_version must run before the gi.repository imports, so E402 is ignored in the GTK modules.
-"lectos/app.py" = ["E402"]
-"lectos/console.py" = ["E402"]
-"lectos/inkinput.py" = ["E402"]
-"lectos/tuiglib.py" = ["E402"]
-"lectos/pdfdoc.py" = ["E402"]
-"lectos/projector.py" = ["E402"]
+"lectos/gtk/*.py" = ["E402"]
+"tests/gtk/*.py" = ["E402"]
 # The Unicode math table deliberately contains Greek letters and operators that resemble ASCII.
-"lectos/unimath.py" = ["RUF001"]
+"lectos/notes/unimath.py" = ["RUF001"]
 # The i18n tests assert on Russian text.
 "tests/test_i18n.py" = ["RUF001"]
 
@@ -107,3 +104,14 @@ max-statements = 40
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
+
+[tool.coverage.run]
+source = ["lectos"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+skip_covered = true
+# Type-checking-only imports never run. Every other exclusion must be narrow and explained here.
+exclude_also = ["if TYPE_CHECKING:"]

@@ -8,19 +8,20 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-from lectos import header as header_items
-from lectos import i18n, style
-from lectos import layout as layouts
-from lectos.deck import MAX_TARGET_MIN, parse_minutes
-from lectos.ink import (
+from lectos import i18n
+from lectos.model import header as header_items
+from lectos.model import layout as layouts
+from lectos.model import style
+from lectos.model.deck import MAX_TARGET_MIN, parse_minutes
+from lectos.model.ink import (
     MAX_ERASER_RADIUS,
     MAX_HIGHLIGHT_ALPHA,
+    MAX_PEN_WIDTH,
     MAX_SMOOTHING,
     MIN_ERASER_RADIUS,
     MIN_HIGHLIGHT_ALPHA,
     parse_color,
     parse_number,
-    parse_width,
 )
 
 MAX_IMAGE_BYTES = 50 * 1024 * 1024
@@ -199,9 +200,7 @@ def _number_option(
 def _drawing(section: dict[str, object]) -> Drawing:
     where = "[drawing] "
     base = Drawing()
-    width = _number_option(section, "width", base.width, (1, 40), where)
-    if parse_width(str(int(width))) is None:
-        raise ConfigError(f"{where}width must be 1..40")
+    width = _number_option(section, "width", base.width, (1, MAX_PEN_WIDTH), where)
     board = _typed(section, "board", str, base.board, where)
     if board not in style.BOARD_STYLES:
         raise ConfigError(f"{where}board must be one of {', '.join(style.BOARD_STYLES)}")

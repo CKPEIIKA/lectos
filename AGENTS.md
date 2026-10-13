@@ -89,6 +89,8 @@ uv run ty check
 uv run pytest
 ```
 
+`uv run pytest` measures line and branch coverage and fails below 100% (`fail_under` in pyproject). GTK tests need a display; without one they are skipped and the gate fails.
+
 Ruff must enable at least E, F, I, UP, B, SIM, C90, PLR, and RUF.
 The shared line length is 120 and the shared complexity ceiling is 7.
 Existing project-specific rules may be stricter.
@@ -130,24 +132,17 @@ Mission: a small Linux presenter tool. Slides are PDFs; notes are Markdown or Be
 
 Non-goals: compiling slides (the user builds the PDF; lectos only reads a Beamer .tex for its notes), slide authoring, a web UI, simulated keystrokes, controlling any viewer except Zathura through its D-Bus interface.
 
-Layers (dependencies point down; modules marked * need GTK):
+Package layout. **Keep package folders compact: no folder holds more than 7 Python files (counting `__init__.py`).** When a folder would grow past that, consolidate weak tiny modules or introduce a coherent subpackage. A test enforces it for `lectos/` and `tests/`. Dependencies point down this list; modules marked * need GTK/PyGObject (the rest import without it):
 
-- `cli.py` - `lectos` / `lectos-tui` arguments, the console/projector choice, dispatch; imports GTK modules only when needed
-- `projection.py` - `Projector` protocol with capability set, `ProjectorSync` (deck to projector), command gating by capability; `zathura.py` - Zathura projector; no GTK imports
-- `app.py`* - GTK console application: shared `Core`, projector choice, polling, autosave, close handling
-- `console.py`*, `projector.py`* - the two windows; no business rules beyond wiring
-- `deck.py` - page/view/freeze/blackout state and `Timer`; no GUI imports
-- `keys.py` - vim key interpreter; `commands.py` - `:` line parsing, flags and Tab completion; both without GUI imports
-- `ink.py` - strokes per layer (`s<page>` or `board`), tool, undo/redo, JSON round trip; `render.py` - cairo drawing of strokes, laser and board; `stage.py` - what the audience sees (slide or board + ink + laser); all without GTK imports
-- `tui.py` - terminal console as a state machine (keys in, frame lines out; testable without a terminal); `tuitext.py` - ANSI wrapping and clipping; `tuiterm.py` - raw terminal and key decoding; `unimath.py` - LaTeX to Unicode; `pdftools.py` - `pdfinfo`/`pdftotext`/`pdftoppm`/`chafa` boundary; `tuiglib.py`* - terminal console inside a GLib loop when the projector is our GTK window
-- `inkinput.py`* - pen/mouse gestures that draw or erase; used by both windows
-- `i18n.py` - gettext-style catalogs (English source text; `ru`, `de`) read from `lectos/locale/*.po`; strings shown to the user are wrapped in `tr("...")`, strings kept in tables in `noop("...")` and translated where shown; a test enforces that every marked literal is translated and that placeholders match; no GUI imports
-- `style.py` - board backgrounds and laser look; `toolcmds.py` - pen/board/laser settings as commands that return a message (shared by both consoles); `paths.py` - never-overwrite file names; all without GUI imports
-- `layout.py` - compact/wide/auto rules, filmstrip page selection and thumbnail sizing; `header.py` - the table of header items (icons, fallback text, commands); both without GUI imports
-- `config.py` - `options.toml` loading and validation (strict: unknown keys and bad values are errors); no GUI imports
-- `notes.py` - `NotesSource` protocol, Markdown splitting and parsing into spans; `beamer.py` - `\note{}` extraction from .tex and frame-to-page mapping via `.nav`; `search.py` - substring search
-- `mathimg.py` - LaTeX to cached PNG via `latex` and `dvipng`; the only subprocess boundary
-- `pdfdoc.py`* - Poppler access; `state.py` - recovery file under `$XDG_STATE_HOME/lectos`
+- `lectos/` - entry and cross-cutting modules only: `cli.py` (`lectos` / `lectos-tui` arguments, the console/projector choice, dispatch; imports GTK modules only when needed), `config.py` (`options.toml` loading and strict validation), `i18n.py` (gettext-style catalogs from `lectos/locale/*.po`; user-visible strings go through `tr("...")`, strings kept in tables through `noop("...")`; a test enforces that every marked literal is translated and placeholders match), `state.py` (recovery files under `$XDG_STATE_HOME/lectos`), `paths.py` (never-overwrite file names)
+- `lectos/model/` - presentation state and rules, no GUI: `deck.py` (page/view/freeze/blackout, `Timer`, schedule), `ink.py` (strokes per layer, tool, undo/redo, JSON), `style.py` (board backgrounds, laser look), `layout.py` (compact/wide/auto, filmstrip), `header.py` (header item table)
+- `lectos/control/` - what the presenter can ask for, no GUI: `commands.py` (`:` parsing, flags, Tab completion, the help table), `keys.py` (vim keys), `toolcmds.py` (pen/board/laser settings shared by both consoles), `search.py`
+- `lectos/notes/` - lecture notes: `markdown.py` (`NotesSource`, splitting, parsing into spans), `beamer.py` (`\note{}` extraction, frame-to-page via `.nav`), `unimath.py` (LaTeX to Unicode), `mathimg.py` (LaTeX to cached PNG via `latex` and `dvipng`; a subprocess boundary)
+- `lectos/draw/` - cairo drawing shared by both consoles, no GTK: `render.py` (strokes, laser, board), `stage.py` (what the audience sees: slide or board + ink + laser; PDF export)
+- `lectos/projectors/` - `projection.py` (`Projector` protocol with capability set, `ProjectorSync`, command gating), `zathura.py` (Zathura over D-Bus)
+- `lectos/gtk/`* - GTK console and window wiring: `app.py` (shared `Core`, projector choice, polling, autosave), `console.py` (the presenter window), `projector.py` (the audience window), `inkinput.py` (pen/mouse gestures), `pdfdoc.py` (Poppler), `tuiglib.py` (terminal console inside a GLib loop when the projector is our GTK window)
+- `lectos/term/` - terminal console, no GTK: `tui.py` (state machine: keys in, frame lines out), `tuitext.py` (ANSI wrapping), `tuiterm.py` (raw terminal, key decoding), `pdftools.py` (`pdfinfo`/`pdftotext`/`pdftoppm`/`chafa` boundary)
+- `tests/` mirrors the packages (`tests/model/`, `tests/control/`, ...) with the same folder-size limit
 
 Invariants: user-visible strings are literals passed to `tr()`/`noop()` (no f-strings, so they can be extracted: use `tr("... {x}").format(x=...)`); searching never replaces the slides (an inline panel), and the overview grid restores the previous view when cancelled; the GTK console is built from libadwaita widgets (`Adw.ApplicationWindow`, `ToolbarView`, `Banner`, `ToastOverlay`, `PreferencesPage`) and follows the system colour scheme; anything the audience would care about (frozen, blackout, board) has a banner, not only a toggle; every command has an entry in `commands.HELP` (a test enforces it) and appears in the GTK menu; pen/board/laser changes go through `Tools` so both consoles behave identically; export and erase-all never destroy data silently (unique file names; erase-all is undoable); header items and menu entries only call `ConsoleWindow.execute`, and widget state (toggles, check and radio items) is derived from the real state in `_sync_actions`, never stored in the widgets; the main page is rebuilt only when the resolved layout changes, and all layouts share one text buffer; the projector is only ever moved through `ProjectorSync` (deck subscription), never by a console directly; every console command that needs a projector feature is registered through `apply_caps`, so a projector without the capability answers "not supported by this projector" instead of silently doing nothing; the terminal console never lets `chafa` probe the terminal (`--probe off`) and receives Ctrl-C as a key (ISIG off); stderr is redirected to a log while the terminal screen is in use together with GTK; both GTK windows draw through one `Stage`, so the console preview and the projector cannot disagree; ink coordinates are in layer space (page points, or the 1600x900 board), the laser is stored as fractions of the shown content; every user action is a named command in the console's single command table (`ConsoleWindow.execute`); buttons, keys and the `:` line all go through it, so the `:` line can do everything the interface can; colours from options are validated as `#rrggbb` before they reach CSS; pages are zero-based internally and one-based only in notes markers and the UI; the projector page changes only through `Deck`; `Deck.peek` moves the view without the projector; GUI-free modules stay importable without PyGObject so they can be unit-tested; `latex` runs with `-no-shell-escape` and paranoid file access, with a timeout, and one bad formula never hides the others; state and cache files are written atomically or content-addressed.
 

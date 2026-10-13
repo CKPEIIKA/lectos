@@ -125,7 +125,7 @@ uv run lectos --console tui --projector gtk examples/slides.pdf examples/slides.
 - `TODO.md` - unfinished work only
 - `DONE.md` - completed outcomes and validation evidence
 - `pyproject.toml` - package, dependency, pytest, Ruff, and Ty configuration
-- `lectos/` - import package; see the layer map in `AGENTS.md`
+- `lectos/` - import package, split into subpackages (`model`, `control`, `notes`, `draw`, `projectors`, `gtk`, `term`); see the layout in `AGENTS.md`
 - `examples/` - sample deck about lectos: Beamer source with notes, compiled PDF, Markdown notes, `options.toml`, `standby.svg`
 - `tests/` - automated tests
 - `docs/README.md` - documentation map; `docs/screenshots/` - the pictures above
@@ -141,7 +141,7 @@ uv sync --group dev
 ./scripts/quality.sh
 ```
 
-The gate runs Ruff linting, Ruff formatting checks, Ty, and pytest. Run Vulture manually when reviewing removals: `./scripts/audit.sh`.
+The gate runs Ruff linting, Ruff formatting checks, Ty, and pytest with a 100% line and branch coverage requirement. The GTK tests open real windows, so they need a display (they are skipped without one, and then the coverage requirement fails). Run Vulture manually when reviewing removals: `./scripts/audit.sh`.
 
 ## LICENSE
 

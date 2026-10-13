@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from lectos import commands, config, i18n, keys
+from lectos import config, i18n
+from lectos.control import commands, keys
 
 ROOT = Path(__file__).parent.parent
 _spec = importlib.util.spec_from_file_location("marked_strings", ROOT / "scripts" / "marked_strings.py")

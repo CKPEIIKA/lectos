@@ -9,7 +9,7 @@ NAMES = {"tr", "noop"}
 
 def marked(root: Path) -> list[str]:
     found: dict[str, None] = {}
-    for path in sorted(root.glob("*.py")):
+    for path in sorted(root.rglob("*.py")):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if (
                 isinstance(node, ast.Call)

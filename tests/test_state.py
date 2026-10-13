@@ -31,3 +31,22 @@ def test_ink_kind_is_a_separate_larger_file(tmp_path: Path, monkeypatch: pytest.
     assert state.load(pdf) == {"page": 1}
     assert state.load(pdf, "ink") == big
     assert state.state_path(pdf, "ink") != state.state_path(pdf)
+
+
+def test_a_failed_write_leaves_no_temporary_file_and_keeps_the_old_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+    pdf = tmp_path / "a.pdf"
+    state.save(pdf, {"page": 1})
+
+    def boom(*_args: object) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(state.os, "replace", boom)
+    with pytest.raises(OSError, match="disk full"):
+        state.save(pdf, {"page": 2})
+    monkeypatch.undo()
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+    assert state.load(pdf) == {"page": 1}
+    assert [p.name for p in state.state_path(pdf).parent.iterdir()] == [state.state_path(pdf).name]

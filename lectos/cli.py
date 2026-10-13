@@ -9,6 +9,9 @@ from dataclasses import replace
 from importlib.metadata import version
 from pathlib import Path
 
+from lectos import i18n
+from lectos.config import ConfigError, Options, load
+
 CONSOLE_CHOICES = ("gtk", "tui")
 PROJECTOR_CHOICES = ("gtk", "zathura", "none")
 GTK_MISSING = "GTK 4 with PyGObject and the Poppler typelib is needed for this combination (see README)"
@@ -54,9 +57,6 @@ def main(argv: Sequence[str] | None = None, *, default_console: str = "gtk", def
         if path is not None and not path.is_file():
             print(f"lectos: not a file: {path}", file=sys.stderr)
             return 2
-    from lectos import i18n
-    from lectos.config import ConfigError, load
-
     try:
         options = load(args.config)
     except ConfigError as exc:
@@ -81,21 +81,19 @@ def main_tui(argv: Sequence[str] | None = None) -> int:
     return main(argv, default_console="tui", default_projector="zathura")
 
 
-def _dispatch(console: str, projector: str, args: argparse.Namespace, options: object) -> int:
-    from lectos.beamer import open_notes
-    from lectos.config import Options
+def _dispatch(console: str, projector: str, args: argparse.Namespace, options: Options) -> int:
+    from lectos.notes.beamer import open_notes
 
-    assert isinstance(options, Options)
     source = open_notes(args.notes, args.pdf) if args.notes else None
     if console == "gtk":
-        from lectos.app import run  # imports GTK only when actually presenting
+        from lectos.gtk.app import run  # imports GTK only when actually presenting
 
         return run(args.pdf, source, options, projector=projector, windowed=args.windowed, monitor=args.monitor)
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
         print("lectos: the terminal console needs an interactive terminal", file=sys.stderr)
         return 2
     if projector == "gtk":
-        from lectos.tuiglib import run as run_with_gtk_projector
+        from lectos.gtk.tuiglib import run as run_with_gtk_projector
 
         return run_with_gtk_projector(
             args.pdf, args.notes, options, windowed=args.windowed, monitor=args.monitor, fullscreen=args.fullscreen
@@ -103,14 +101,12 @@ def _dispatch(console: str, projector: str, args: argparse.Namespace, options: o
     return _run_terminal(projector, args, options)
 
 
-def _run_terminal(projector: str, args: argparse.Namespace, options: object) -> int:
-    from lectos.config import Options
-    from lectos.pdftools import PdfToolError
-    from lectos.projection import NullProjector
-    from lectos.tui import make_tui, run_select
-    from lectos.zathura import ProjectorError, Zathura
+def _run_terminal(projector: str, args: argparse.Namespace, options: Options) -> int:
+    from lectos.projectors.projection import NullProjector
+    from lectos.projectors.zathura import ProjectorError, Zathura
+    from lectos.term.pdftools import PdfToolError
+    from lectos.term.tui import make_tui, run_select
 
-    assert isinstance(options, Options)
     zathura = Zathura(args.pdf.resolve()) if projector == "zathura" else None
     try:
         if zathura is not None:
