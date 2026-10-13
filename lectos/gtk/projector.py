@@ -11,17 +11,33 @@ from gi.repository import Gdk, Gtk
 from lectos.config import Blackout
 from lectos.draw.stage import Stage
 from lectos.gtk.inkinput import InkInput
+from lectos.i18n import tr
 from lectos.model.ink import Ink
 from lectos.projectors.projection import GTK_CAPS
+
+PROJECTOR_ICON = "lectos-projector"
 
 
 class ProjectorWindow(Gtk.ApplicationWindow):
     """Shows the stage for ``deck.page`` fitted to the window; draws under pen or ``draw on`` mouse."""
 
     def __init__(
-        self, app: Gtk.Application, stage: Stage, ink: Ink, monitor: Gdk.Monitor | None, blackout: Blackout
+        self,
+        app: Gtk.Application,
+        stage: Stage,
+        ink: Ink,
+        monitor: Gdk.Monitor | None,
+        blackout: Blackout,
+        *,
+        name: str = "",
     ) -> None:
-        super().__init__(application=app, title="lectos projector", default_width=960, default_height=540)
+        super().__init__(
+            application=app,
+            title=tr("lectos projector - {name}").format(name=name),
+            icon_name=PROJECTOR_ICON,
+            default_width=960,
+            default_height=540,
+        )
         self.stage, self.deck, self.ink, self.monitor = stage, stage.deck, ink, monitor
         self.area = Gtk.DrawingArea(hexpand=True, vexpand=True)
         self.area.set_draw_func(self._draw)

@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from lectos.paths import write_atomic
+
 MAX_NOTES_BYTES = 4 * 1024 * 1024
 _MARKER_RE = re.compile(r"^<!--\s*slide:\s*(\d+)\s*-->[ \t]*$", re.MULTILINE)
 _MATH_RE = re.compile(
@@ -47,6 +49,9 @@ class NotesSource(Protocol):
     def load(self) -> list[Section]:
         """Read the notes into sections."""
 
+    def save(self, slide: int, text: str) -> None:
+        """Replace the notes of one slide (one-based) with ``text``."""
+
 
 class MarkdownNotes:
     """Notes read from a Markdown file."""
@@ -62,6 +67,13 @@ class MarkdownNotes:
         """Read the file."""
         return load_sections(self.path)
 
+    def save(self, slide: int, text: str) -> None:
+        """Rewrite the file with this slide's notes replaced."""
+        try:
+            write_atomic(self.path, replace_section(self.path.read_text(encoding="utf-8"), slide, text))
+        except OSError as exc:
+            raise NotesError(f"cannot write {self.path}: {exc}") from exc
+
 
 def split_markdown(text: str) -> list[tuple[int | None, str]]:
     """Split at ``<!-- slide: N -->`` markers, dropping empty chunks."""
@@ -73,6 +85,19 @@ def split_markdown(text: str) -> list[tuple[int | None, str]]:
         slide, last = int(match.group(1)), match.end()
     parts.append((slide, text[last:]))
     return [(s, chunk) for s, chunk in parts if chunk.strip()]
+
+
+def replace_section(text: str, slide: int, body: str) -> str:
+    """``text`` with the notes of ``slide`` replaced by ``body``; a slide without notes gets a new marker at the end."""
+    clean = body.strip("\n") + "\n"
+    matches = list(_MARKER_RE.finditer(text))
+    for i, match in enumerate(matches):
+        if int(match.group(1)) == slide:
+            following = matches[i + 1].start() if i + 1 < len(matches) else None
+            tail = "" if following is None else "\n" + text[following:]
+            return f"{text[: match.end()]}\n{clean}{tail}"
+    gap = "" if not text or text.endswith("\n") else "\n"
+    return f"{text}{gap}\n<!-- slide: {slide} -->\n{clean}"
 
 
 def load_sections(path: Path) -> list[Section]:

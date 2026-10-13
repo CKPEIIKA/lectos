@@ -2,6 +2,17 @@
 
 Completed work only. Record meaningful outcomes and validation evidence, newest first.
 
+## 2026-10-13: start window, notes editing, settings, drawing layout; subpackages; 100% coverage
+
+- `lectos` without arguments opens a start window (choose slides, notes, or a folder); a PDF or a folder on the command line works too, and notes next to the slides are found automatically. `Open other slides…` / `:open` switches decks without leaving the application (state of the old deck is saved first).
+- Notes can be edited in the console (`edit`, key `E`): Markdown is rewritten atomically (one slide's section), a Beamer `.tex` is never touched (edits live in the state folder).
+- Settings window and `panel NAME [on|off]` / `[console] hide`: notes, audience, next, filmstrip and status bar can be hidden; saved with the session.
+- Quick drawing layout (`sketch`, key `s`, header button, `layout draw`): large slide plus a toolbar (colours, width, highlighter, eraser, undo, redo, clear, board, laser); the mouse draws while it is on. Pointer is a crosshair (cell for the eraser) wherever the mouse draws, in both windows.
+- `export-ink` writes a slide's (or the board's) drawing layer alone to a transparent PNG.
+- Distinct window titles and icons for console and projector (bundled SVGs). Overview tiles keep their height; the timer button has room.
+- README shortened to install/run/basics; the full reference moved to `docs/usage.md`.
+- Package split into subpackages with at most 7 Python files per folder (enforced by a test); 100% line and branch coverage gate (446 tests; the GTK tests need a display). Validation: `./scripts/quality.sh`, `./scripts/release_check.sh`.
+
 ## 2026-10-13: ultrareview findings fixed
 
 - Ink recovery file: a stroke colour like `#zzzzzz` or `#abc` was accepted and then crashed every redraw and PDF export; colours are now validated as `#rrggbb` when loading.

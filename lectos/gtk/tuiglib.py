@@ -16,7 +16,7 @@ from gi.repository import Gio, GLib, GLibUnix, Gtk
 
 from lectos import state
 from lectos.config import Options
-from lectos.gtk.app import build_core, make_projector, save_ink
+from lectos.gtk.app import build_core, make_projector, register_icons, save_ink
 from lectos.projectors.projection import GTK_CAPS
 from lectos.term.tui import Runner, Tui, make_tui
 from lectos.term.tuiterm import Terminal
@@ -71,6 +71,7 @@ def run(
     saved_stderr = _redirect_stderr(pdf)
 
     def activate(app: Gtk.Application) -> None:
+        register_icons()
         core = build_core(pdf, GTK_CAPS, options)
         try:
             projector = make_projector(app, core, "gtk", options, pdf, windowed=windowed, monitor=monitor)

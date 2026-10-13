@@ -11,9 +11,10 @@ text_color = "#f2f2f2"
 [console]
 vim = true                     # vim keys on at startup (--no-vim overrides)
 target_min = 90                # default lecture length: minutes (90) or a length like "1h30", "1:30", "45m" (at most 24 h)
-layout = "auto"                # "compact" (notebook), "wide" (big screen) or "auto" by window width
+layout = "auto"                # "compact" (notebook), "wide" (big screen), "draw" (quick drawing) or "auto" by window width
 previous = 3                   # filmstrip (wide layout): slides before the current one, 0..8
 upcoming = 8                   # filmstrip (wide layout): slides after the current one, 0..16
+hide = []                      # console parts to hide at startup: "notes" "audience" "next" "strip" "status"
 
 [drawing]
 color = "yellow"               # pen colour: red yellow green blue white black, or #rrggbb
@@ -31,8 +32,8 @@ halo = true                    # soft glow around it
 
 [header]
 # What the console header bar shows, left to right. Known items:
-#   prev next goto overview search freeze blackout board laser draw eraser undo redo
-#   projector fullscreen layout menu
+#   prev next goto overview search freeze blackout board laser draw eraser highlighter clear undo redo
+#   projector fullscreen layout sketch menu
 start = ["prev", "next", "goto", "overview", "search"]
 title = "timer"                # "timer", "slide" or "none"
 end = ["layout", "freeze", "blackout", "menu"]

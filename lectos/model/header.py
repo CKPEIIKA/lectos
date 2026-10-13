@@ -45,10 +45,21 @@ ITEMS = {
     ),
     "draw": Item(("tools-symbolic", "document-edit-symbolic"), "draw", "draw", noop("mouse drawing (d)"), True),
     "eraser": Item(("edit-clear-symbolic", "edit-delete-symbolic"), "eraser", "eraser", noop("eraser (e)"), True),
+    "highlighter": Item(
+        ("format-text-underline-symbolic", "tools-symbolic"), "mark", "highlighter", noop("highlighter"), True
+    ),
+    "clear": Item(("edit-clear-all-symbolic", "edit-clear-symbolic"), "clear", "clear", noop("clear slide ink")),
     "undo": Item(("edit-undo-symbolic",), "undo", "undo", noop("undo ink (u)")),
     "redo": Item(("edit-redo-symbolic",), "redo", "redo", noop("redo ink (U)")),
     "projector": Item(("video-display-symbolic",), "proj", "projector-fullscreen", noop("projector fullscreen (f)")),
     "fullscreen": Item(("view-fullscreen-symbolic",), "full", "fullscreen", noop("console fullscreen (F)")),
+    "sketch": Item(
+        ("applications-graphics-symbolic", "document-edit-symbolic"),
+        "sketch",
+        "sketch",
+        noop("quick drawing layout (s)"),
+        True,
+    ),
     "layout": Item(("view-dual-symbolic",), "layout", "layout toggle", noop("switch compact / wide layout")),
 }
 SPECIAL = ("goto", "menu")  # widgets that are not plain buttons
@@ -56,5 +67,5 @@ ITEM_NAMES = (*ITEMS, *SPECIAL)
 TITLES = ("timer", "slide", "none")
 DEFAULT_START = ("prev", "next", "goto", "overview", "search")
 DEFAULT_TITLE = "timer"
-DEFAULT_END = ("layout", "freeze", "blackout", "menu")  # displayed left to right
+DEFAULT_END = ("layout", "sketch", "freeze", "blackout", "menu")  # displayed left to right
 MAX_ITEMS = 14

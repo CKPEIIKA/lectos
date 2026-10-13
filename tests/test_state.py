@@ -50,3 +50,11 @@ def test_a_failed_write_leaves_no_temporary_file_and_keeps_the_old_state(
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
     assert state.load(pdf) == {"page": 1}
     assert [p.name for p in state.state_path(pdf).parent.iterdir()] == [state.state_path(pdf).name]
+
+
+def test_edited_notes_get_their_own_markdown_file_per_pdf(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+    one, two = tmp_path / "a.pdf", tmp_path / "b.pdf"
+    assert state.edits_path(one).suffix == ".md"
+    assert state.edits_path(one) != state.edits_path(two)
+    assert state.edits_path(one).parent == state.state_path(one).parent

@@ -12,4 +12,4 @@ def test_items_are_consistent() -> None:
 
 def test_toggle_items_name_a_command_that_takes_on_off() -> None:
     toggles = {name for name, item in header.ITEMS.items() if item.toggle}
-    assert toggles == {"freeze", "blackout", "board", "laser", "draw", "eraser"}
+    assert toggles == {"freeze", "blackout", "board", "laser", "draw", "eraser", "highlighter", "sketch"}

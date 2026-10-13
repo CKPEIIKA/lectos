@@ -23,6 +23,10 @@ from lectos.control.toolcmds import TOOL_FLAG_MESSAGES, Tools
 from lectos.draw.stage import Stage
 from lectos.gtk.inkinput import InkInput
 from lectos.gtk.pdfdoc import PdfDoc
+from lectos.gtk.widgets import css
+from lectos.gtk.widgets.drawbar import DrawBar
+from lectos.gtk.widgets.notesedit import NotesEditor
+from lectos.gtk.widgets.settings import SettingsWindow
 from lectos.i18n import noop, tr
 from lectos.model import header as header_items
 from lectos.model import layout as layouts
@@ -44,6 +48,7 @@ RESIZE_DEBOUNCE_MS = 120
 TOGGLE_CSS = {  # header toggles that light up while active
     "freeze": "suggested-action", "blackout": "destructive-action", "board": "suggested-action",
     "laser": "suggested-action", "draw": "suggested-action", "eraser": "suggested-action",
+    "highlighter": "suggested-action", "sketch": "suggested-action",
 }  # fmt: skip
 BANNERS = (  # (state, style class, title, button, command that turns it off); title and button are translated
     (
@@ -94,7 +99,7 @@ RADIO_MENUS = {  # action -> (submenu title, ((label, value), ...)); titles and 
     "laser-style": (noop("Shape"), ((noop("Dot"), "dot"), (noop("Ring"), "ring"), (noop("Cross"), "cross"))),
     "layout": (
         noop("Layout"),
-        ((noop("Automatic"), "auto"), (noop("Compact"), "compact"), (noop("Wide"), "wide")),
+        ((noop("Automatic"), "auto"), (noop("Compact"), "compact"), (noop("Wide"), "wide"), (noop("Drawing"), "draw")),
     ),
     "upcoming": (noop("Upcoming slides"), _numbers(noop("{n}"), 4, 8, 12, 16)),
 }  # fmt: skip
@@ -126,7 +131,13 @@ class ConsoleWindow(Adw.ApplicationWindow):
         notes: NotesSource | None,
         options: Options,
     ) -> None:
-        super().__init__(application=app, title="lectos", default_width=940, default_height=800)
+        super().__init__(
+            application=app,
+            title=tr("lectos console - {name}").format(name=doc.path.name),
+            icon_name="lectos",
+            default_width=940,
+            default_height=800,
+        )
         self.stage, self.doc, self.deck, self.ink = stage, doc, stage.deck, stage.ink
         self.projector, self.notes = projector, notes
         self.tools = Tools(self.ink, self.deck, stage.laser)
@@ -137,6 +148,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.layout_mode = options.layout
         self.layout_active = layouts.COMPACT
         self.previous, self.upcoming = options.previous, options.upcoming
+        self.hidden = set(options.hidden)
+        self.opener: Callable[[], None] | None = None  # set by the application: choose other slides
         self.hits: list[search.Hit] = []
         self.hit = -1
         self.dirty = False
@@ -172,9 +185,16 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._syncing = False
         self._fitting = False
         self.scroller: Gtk.ScrolledWindow | None = None
+        self.view: Gtk.TextView | None = None
+        self.paned: Gtk.Paned | None = None
+        self._settings: SettingsWindow | None = None
+        self._drawbar: DrawBar | None = None
+        self._draw_before = False  # whether mouse drawing was on before the drawing layout switched it on
+        self._sketch_prev = layouts.AUTO  # the layout mode the drawing layout returns to
 
     # ---- construction ----
     def _build(self, options: Options) -> None:
+        css.install()
         self.buffer = Gtk.TextBuffer()
         for name, props in TAGS.items():
             self.buffer.create_tag(name, **props)
@@ -193,6 +213,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         toolbar = Adw.ToolbarView(content=self.toasts)
         toolbar.add_top_bar(self._build_header(options.header))
         toolbar.add_bottom_bar(self._build_footer())
+        self._apply_status_visibility()
         self.set_content(toolbar)
         keys = Gtk.EventControllerKey(propagation_phase=Gtk.PropagationPhase.CAPTURE)
         keys.connect("key-pressed", self._on_key)
@@ -220,9 +241,9 @@ class ConsoleWindow(Adw.ApplicationWindow):
     # ---- state you can see: banners, toasts, tool summary ----
     def _build_banners(self) -> Gtk.Box:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        for name, css, _title, button, command in BANNERS:
+        for name, style_class, _title, button, command in BANNERS:
             banner = Adw.Banner(button_label=tr(button), revealed=False)
-            banner.add_css_class(css)
+            banner.add_css_class(style_class)
             banner.connect("button-clicked", lambda _b, cmd=command: self.execute(cmd))
             self._banners[name] = banner
             box.append(banner)
@@ -273,7 +294,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
         theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
         return next((name for name in candidates if theme.has_icon(name)), None)
 
-    def _item_button(self, name: str) -> Gtk.Button:
+    def item_button(self, name: str) -> Gtk.Button:
+        """A flat button (or toggle) for a header item; it only runs the item's command and shows its state."""
         item = header_items.ITEMS[name]
         icon = self._icon_name(item.icons)
         kwargs = {"icon_name": icon} if icon else {"label": item.label}
@@ -305,7 +327,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             return Gtk.MenuButton(
                 icon_name="open-menu-symbolic", menu_model=self._menu_model(), tooltip_text=tr("Menu"), primary=True
             )
-        return self._item_button(name)
+        return self.item_button(name)
 
     def _title_widget(self, kind: str) -> Gtk.Widget | None:
         self.timer_icon = Gtk.Image(icon_name="media-playback-start-symbolic")
@@ -314,7 +336,9 @@ class ConsoleWindow(Adw.ApplicationWindow):
         box.append(self.timer_icon)
         box.append(self.timer_label)
         self.timer_button = Gtk.Button(
-            child=box, css_classes=["flat"], tooltip_text=tr("elapsed / time left; click to start or pause (t)")
+            child=box,
+            css_classes=["flat", css.TIMER_CLASS],
+            tooltip_text=tr("elapsed / time left; click to start or pause (t)"),
         )
         self.timer_button.connect("clicked", lambda _b: self.execute("timer"))
         self.title_pos = Gtk.Label(css_classes=["monospace"], tooltip_text=tr("viewed slide / total"))
@@ -338,7 +362,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             "freeze": deck.frozen, "blackout": deck.blackout, "board": deck.board, "laser": deck.laser_on,
             "draw": tool.mouse_draw, "eraser": tool.eraser, "highlighter": tool.highlighter,
             "projector-fullscreen": self.projector.is_fullscreen(), "fullscreen": self.is_fullscreen(),
-            "vim": self.vim_on, "show-slide": self.show_slide_on,
+            "vim": self.vim_on, "show-slide": self.show_slide_on, "sketch": self.layout_active == layouts.DRAW,
         }[name]  # fmt: skip
 
     def _radio_value(self, name: str) -> str:
@@ -354,11 +378,11 @@ class ConsoleWindow(Adw.ApplicationWindow):
     def _install_actions(self) -> None:
         plain = (
             "timer", "timer-reset", "undo", "redo", "clear", "clear-all", "restore-all", "export",
-            "overview", "search", "prev", "next", "help",
+            "overview", "search", "prev", "next", "help", "settings", "edit", "open", "export-ink",
         )  # fmt: skip
         flags = (
             "freeze", "blackout", "board", "laser", "draw", "eraser", "highlighter",
-            "projector-fullscreen", "fullscreen", "vim", "show-slide",
+            "projector-fullscreen", "fullscreen", "vim", "show-slide", "sketch",
         )  # fmt: skip
         for name in plain:
             action = Gio.SimpleAction.new(name, None)
@@ -402,6 +426,10 @@ class ConsoleWindow(Adw.ApplicationWindow):
             self._syncing = False
         self._sync_banners()
         self.tools_label.set_label(self._tool_summary())
+        if self._drawbar is not None:
+            self._drawbar.sync()
+        if self._settings is not None:
+            self._settings.sync()
 
     @staticmethod
     def _menu_item(label: str, action: str, accel: str = "") -> Gio.MenuItem:
@@ -450,7 +478,9 @@ class ConsoleWindow(Adw.ApplicationWindow):
             item(tr("Undo"), "undo", "u"), item(tr("Redo"), "redo", "<Shift>u"), item(tr("Clear slide ink"), "clear"),
             item(tr("Erase all ink"), "clear-all"), item(tr("Restore erased ink"), "restore-all"),
         ))  # fmt: skip
-        drawing.append_section(None, section(item(tr("Export annotated PDF"), "export")))
+        drawing.append_section(None, section(
+            item(tr("Export annotated PDF"), "export"), item(tr("Export this drawing layer (PNG)"), "export-ink"),
+        ))  # fmt: skip
         laser.append_section(None, section(item(tr("Laser pointer"), "laser", "p")))
         inline(laser, "laser-color", "laser-size", "laser-style")
 
@@ -468,11 +498,13 @@ class ConsoleWindow(Adw.ApplicationWindow):
             (tr("Timer"), timer), (tr("Drawing"), drawing), (tr("Laser pointer"), laser), radios("board-style"),
         ))  # fmt: skip
         menu.append_section(tr("View"), section(
-            radios("layout"), radios("upcoming"), item(tr("Console fullscreen"), "fullscreen", "<Shift>f"),
+            radios("layout"), radios("upcoming"), item(tr("Quick drawing layout"), "sketch", "s"),
+            item(tr("Console fullscreen"), "fullscreen", "<Shift>f"),
         ))  # fmt: skip
         menu.append_section(None, section(
-            item(tr("Vim keys"), "vim"), item(tr("Show slide for note hits"), "show-slide"),
-            item(tr("Help and shortcuts"), "help", "question"),
+            item(tr("Edit notes of this slide…"), "edit", "<Shift>e"), item(tr("Open other slides…"), "open"),
+            item(tr("Settings…"), "settings", "<Shift>s"), item(tr("Vim keys"), "vim"),
+            item(tr("Show slide for note hits"), "show-slide"), item(tr("Help and shortcuts"), "help", "question"),
         ))  # fmt: skip
         return menu
 
@@ -560,35 +592,77 @@ class ConsoleWindow(Adw.ApplicationWindow):
             self._pane[self.layout_active] = paned.get_position()
             self._mark_dirty()
 
-    def _build_compact(self) -> Gtk.Paned:
-        """Notebook layout: big preview with audience and next below it, notes on the right."""
-        left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        left.append(self._big_preview())
-        small = Gtk.Box(spacing=6, homogeneous=True)
-        small.append(self._captioned(tr("audience"), lambda: self.deck.page, SMALL_H, staged=True))
-        small.append(self._captioned(tr("next"), lambda: self.deck.view + 1, SMALL_H, staged=False))
-        left.append(small)
-        return self._paned(left, self._notes_widget(), self._pane.get(layouts.COMPACT, 460))
+    def _small_row(self, height: int) -> Gtk.Box | None:
+        """The audience and next previews side by side, or None when both are hidden."""
+        row = Gtk.Box(spacing=6, homogeneous=True)
+        if "audience" not in self.hidden:
+            row.append(self._captioned(tr("audience"), lambda: self.deck.page, height, staged=True))
+        if "next" not in self.hidden:
+            row.append(self._captioned(tr("next"), lambda: self.deck.view + 1, height, staged=False))
+        return row if row.get_first_child() is not None else None
 
-    def _build_wide(self) -> Gtk.Box:
+    def _notes_or_none(self) -> Gtk.ScrolledWindow | None:
+        if "notes" in self.hidden:
+            self.view = self.scroller = None
+            return None
+        return self._notes_widget()
+
+    def _build_compact(self) -> Gtk.Widget:
+        """Notebook layout: big preview with audience and next below it, notes on the right."""
+        left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, hexpand=True)
+        left.append(self._big_preview())
+        small = self._small_row(SMALL_H)
+        if small is not None:
+            left.append(small)
+        notes = self._notes_or_none()
+        if notes is None:
+            return left
+        return self._paned(left, notes, self._pane.get(layouts.COMPACT, 460))
+
+    def _build_wide(self) -> Gtk.Widget:
         """Big-screen layout: large slide, a bigger next slide and tall notes, and a filmstrip underneath."""
         right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        row = Gtk.Box(spacing=6, homogeneous=True)
-        row.append(self._captioned(tr("audience"), lambda: self.deck.page, WIDE_ROW_H, staged=True))
-        row.append(self._captioned(tr("next"), lambda: self.deck.view + 1, WIDE_ROW_H, staged=False))
-        right.append(row)
-        right.append(self._notes_widget())
-        width = self.get_width() or self.get_default_size()[0]
-        top = self._paned(self._big_preview(), right, self._pane.get(layouts.WIDE, int(width * 0.58)))
+        row = self._small_row(WIDE_ROW_H)
+        if row is not None:
+            right.append(row)
+        notes = self._notes_or_none()
+        if notes is not None:
+            right.append(notes)
+        if right.get_first_child() is None:
+            top: Gtk.Widget = self._big_preview()
+        else:
+            width = self.get_width() or self.get_default_size()[0]
+            top = self._paned(self._big_preview(), right, self._pane.get(layouts.WIDE, int(width * 0.58)))
         top.set_vexpand(True)
-        self._strip_box = Gtk.Box(
-            spacing=layouts.STRIP_GAP_PX, margin_start=layouts.STRIP_GAP_PX, margin_top=4, margin_bottom=4
-        )
-        strip = Gtk.ScrolledWindow(child=self._strip_box, vscrollbar_policy=Gtk.PolicyType.NEVER)
         column = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         column.append(top)
-        column.append(strip)
+        if "strip" not in self.hidden:
+            self._strip_box = Gtk.Box(
+                spacing=layouts.STRIP_GAP_PX, margin_start=layouts.STRIP_GAP_PX, margin_top=4, margin_bottom=4
+            )
+            column.append(Gtk.ScrolledWindow(child=self._strip_box, vscrollbar_policy=Gtk.PolicyType.NEVER))
         return column
+
+    def _build_draw(self) -> Gtk.Widget:
+        """Quick drawing: the slide as large as the window allows, with the drawing toolbar underneath."""
+        self.view = self.scroller = None
+        self._drawbar = DrawBar(self)
+        column = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        column.append(self._big_preview())
+        column.append(self._drawbar)
+        return column
+
+    def pen_color_name(self) -> str:
+        """Name of the current pen colour (empty for a custom one)."""
+        return self._color_name(self.ink.tool.color)
+
+    def pen_width(self) -> float:
+        """Current pen width."""
+        return self.ink.tool.width
+
+    def target_minutes(self) -> int:
+        """The planned lecture length."""
+        return self.timer.target_min
 
     def _apply_layout(self, *, force: bool = False) -> None:
         """Show the layout the mode and window width call for, rebuilding the main page only when it changes."""
@@ -597,18 +671,31 @@ class ConsoleWindow(Adw.ApplicationWindow):
         if not force and active == self.layout_active:
             return
         keep = self.scroller.get_vadjustment().get_value() if self.scroller is not None else 0.0
+        self._switch_drawing_mouse(self.layout_active, active)
         self.layout_active = active
         self._stage_areas.clear()
         self._plain_areas.clear()
-        self._strip_box = None
+        self._strip_box = self.paned = self._drawbar = None
         child = self.main_holder.get_first_child()
         if child is not None:
             self.main_holder.remove(child)
-        self.main_holder.append(self._build_wide() if active == layouts.WIDE else self._build_compact())
+        builders = {layouts.WIDE: self._build_wide, layouts.DRAW: self._build_draw}
+        self.main_holder.append(builders.get(active, self._build_compact)())
         GLib.idle_add(self._after_layout, keep)
         self._refresh_strip()
         self._mark_current_section()
         self._sync_actions()
+
+    def _switch_drawing_mouse(self, before: str, after: str) -> None:
+        """The drawing layout lets the mouse draw; leaving it puts the earlier setting back."""
+        tool = self.ink.tool
+        if after == layouts.DRAW and before != layouts.DRAW:
+            self._draw_before, tool.mouse_draw = tool.mouse_draw, True
+        elif before == layouts.DRAW and after != layouts.DRAW:
+            tool.mouse_draw = self._draw_before
+        else:
+            return
+        self.ink.notify()
 
     def _after_layout(self, keep: float) -> bool:
         """After a rebuild, line wrapping differs: realign to the current slide's notes, else restore the offset."""
@@ -680,9 +767,12 @@ class ConsoleWindow(Adw.ApplicationWindow):
 
     def _build_overview(self) -> Gtk.ScrolledWindow:
         self.flow = Gtk.FlowBox(
-            selection_mode=Gtk.SelectionMode.SINGLE, activate_on_single_click=False, homogeneous=True,
+            selection_mode=Gtk.SelectionMode.SINGLE,
+            activate_on_single_click=False,
+            homogeneous=True,
             max_children_per_line=12,
-        )  # fmt: skip
+            valign=Gtk.Align.START,
+        )  # fmt: skip  (valign: tiles keep their own height instead of stretching to the window)
         self.flow.connect("child-activated", self._overview_pick)  # double click or Enter: go there and leave
         self.flow.connect("selected-children-changed", self._overview_preview)  # single click: look at it
         return Gtk.ScrolledWindow(child=self.flow)
@@ -944,6 +1034,12 @@ class ConsoleWindow(Adw.ApplicationWindow):
             "laser-size": lambda a: self._tool(t.laser_size, a),
             "laser-style": lambda a: self._tool(t.laser_style, a),
             "export": self._cmd_export,
+            "export-ink": self._cmd_export_ink,
+            "panel": self._cmd_panel,
+            "settings": lambda _a: self._cmd_settings(),
+            "edit": lambda _a: self._cmd_edit(),
+            "open": lambda _a: self._cmd_open(),
+            "sketch": lambda a: self._cmd_sketch(c.flag(a, self.layout_active == layouts.DRAW)),
             "help": self._cmd_help,
             "quit": lambda _a: self.close(),
         }
@@ -969,12 +1065,71 @@ class ConsoleWindow(Adw.ApplicationWindow):
         if mode == "toggle":
             mode = layouts.COMPACT if self.layout_active == layouts.WIDE else layouts.WIDE
         if mode not in layouts.MODES:
-            self._set_status(tr("layout: auto, compact, wide or toggle"))
+            self._set_status(tr("layout: auto, compact, wide, draw or toggle"))
             return
+        if mode == layouts.DRAW and self.layout_mode != layouts.DRAW:
+            self._sketch_prev = self.layout_mode  # what leaving the drawing layout returns to
         self.layout_mode = mode
         self._apply_layout()
         self._sync_actions()
         self._mark_dirty()
+
+    def _cmd_sketch(self, on: bool) -> None:
+        if on != (self.layout_active == layouts.DRAW):
+            self._cmd_layout(layouts.DRAW if on else self._sketch_prev)
+
+    def _cmd_panel(self, arg: str) -> None:
+        name, _, value = arg.partition(" ")
+        if name not in layouts.PANELS:
+            self._set_status(tr("panel needs one of: {names}").format(names=" ".join(layouts.PANELS)))
+            return
+        show = commands.flag(value.strip(), name not in self.hidden)
+        (self.hidden.discard if show else self.hidden.add)(name)
+        self._apply_status_visibility()
+        self._apply_layout(force=True)
+        self._sync_actions()
+        self._mark_dirty()
+
+    def _apply_status_visibility(self) -> None:
+        for widget in (self.pos, self.tools_label, self.info):
+            widget.set_visible("status" not in self.hidden)
+
+    def _cmd_settings(self) -> None:
+        if self._settings is None:
+            self._settings = SettingsWindow(self, self)
+            self._settings.connect("close-request", self._settings_closed)
+        self._settings.present()
+
+    def _settings_closed(self, _window: Gtk.Window) -> bool:
+        self._settings = None
+        return False
+
+    def _cmd_edit(self) -> None:
+        if self.notes is None:
+            self._set_status(tr("no notes are loaded: start lectos with a notes file or use Open"))
+            return
+        slide = self.deck.view + 1
+        index = self._current_section()
+        text = self._sections[index].text if index is not None else ""
+        NotesEditor(self, slide, text, lambda edited: self._save_notes(slide, edited)).present()
+
+    def _save_notes(self, slide: int, text: str) -> None:
+        if self.notes is None:
+            return
+        try:
+            self.notes.save(slide, text)
+        except NotesError as exc:
+            self._set_status(str(exc))
+            return
+        self._notes_mtime = -1  # reload now
+        self.poll_notes()
+        self._set_status(tr("notes of slide {n} saved").format(n=slide))
+
+    def _cmd_open(self) -> None:
+        if self.opener is None:
+            self._set_status(tr("opening other slides is not available here"))
+            return
+        self.opener()
 
     def _cmd_count(self, name: str, arg: str, maximum: int) -> None:
         if not arg.isdigit():
@@ -1028,6 +1183,18 @@ class ConsoleWindow(Adw.ApplicationWindow):
             self._set_status(tr("export failed: {error}").format(error=exc))
             return
         self._set_status(tr("wrote {path} ({pages} pages)").format(path=target, pages=pages))
+
+    def _cmd_export_ink(self, arg: str) -> None:
+        page = self.deck.view
+        name = "board" if self.deck.board else f"slide-{page + 1}"
+        base = Path(arg).expanduser() if arg else self.doc.path.with_name(f"{self.doc.path.stem}-{name}-ink.png")
+        target = unique(base)
+        try:
+            self.stage.export_ink_png(target, page)
+        except (OSError, cairo.Error) as exc:
+            self._set_status(tr("export failed: {error}").format(error=exc))
+            return
+        self._set_status(tr("wrote {path}").format(path=target))
 
     def _cmd_help(self, arg: str) -> None:
         if arg:
@@ -1104,6 +1271,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.cmd.set_position(-1)
 
     def _scroll(self, lines: int) -> None:
+        if self.scroller is None:
+            return
         adj = self.scroller.get_vadjustment()
         adj.set_value(adj.get_value() + lines * SCROLL_STEP)
 
@@ -1161,15 +1330,16 @@ class ConsoleWindow(Adw.ApplicationWindow):
         return False
 
     def _rebuild_notes(self) -> None:
-        adj = self.scroller.get_vadjustment()
-        keep = adj.get_value()
+        adj = self.scroller.get_vadjustment() if self.scroller is not None else None
+        keep = adj.get_value() if adj is not None else 0.0
         self.buffer.set_text("")
         for i, section in enumerate(self._sections):
             self.buffer.create_mark(f"sec{i}", self.buffer.get_end_iter(), True)
             for span in markdown.parse(section.text):
                 self._insert_span(span)
             self.buffer.insert(self.buffer.get_end_iter(), "\n")
-        GLib.idle_add(lambda: adj.set_value(keep) and False)
+        if adj is not None:
+            GLib.idle_add(lambda: adj.set_value(keep) and False)
         self._mark_current_section()
 
     def _insert_span(self, span: markdown.Span) -> None:
@@ -1194,7 +1364,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
 
     def _scroll_to_section(self, index: int) -> None:
         mark = self.buffer.get_mark(f"sec{index}")
-        if mark is not None:
+        if mark is not None and self.view is not None:
             self.view.scroll_to_mark(mark, 0.0, True, 0.0, 0.0)
 
     def _current_section(self) -> int | None:
@@ -1224,6 +1394,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             "previous": self.previous,
             "upcoming": self.upcoming,
             "vim": self.vim_on,
+            "hidden": sorted(self.hidden),
         }
 
     def restore(self, saved: dict[str, object]) -> None:
@@ -1232,12 +1403,17 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._restore_view(saved)
         scroll = saved.get("notes_scroll")
         if isinstance(scroll, int | float) and not isinstance(scroll, bool):
-            GLib.idle_add(lambda: self.scroller.get_vadjustment().set_value(scroll) and False)
+            GLib.idle_add(self._restore_scroll, float(scroll))
         if isinstance(saved.get("vim"), bool):
             self.vim_on = bool(saved["vim"])
         self._sync_actions()
         self._tick()
         self.dirty = False
+
+    def _restore_scroll(self, value: float) -> bool:
+        if self.scroller is not None:  # not in the drawing layout, or with the notes hidden
+            self.scroller.get_vadjustment().set_value(value)
+        return False
 
     def _restore_view(self, saved: dict[str, object]) -> None:
         panes = saved.get("panes")
@@ -1245,9 +1421,14 @@ class ConsoleWindow(Adw.ApplicationWindow):
             self._pane.update(
                 {k: v for k, v in panes.items() if k in (layouts.COMPACT, layouts.WIDE) and isinstance(v, int)}
             )
+        hidden = saved.get("hidden")
+        if isinstance(hidden, list):
+            self.hidden = {name for name in hidden if name in layouts.PANELS}
+            self._apply_status_visibility()
         mode = saved.get("layout")
         if mode in layouts.MODES:
             self.layout_mode = str(mode)
+            self._sketch_prev = layouts.AUTO  # what came before a restored drawing layout is not known
         for name, maximum in (("previous", layouts.MAX_PREVIOUS), ("upcoming", layouts.MAX_UPCOMING)):
             value = saved.get(name)
             if isinstance(value, int) and not isinstance(value, bool):

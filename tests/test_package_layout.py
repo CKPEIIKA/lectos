@@ -4,7 +4,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_PY_FILES = 7  # AGENTS.md: keep package folders compact; beyond this, consolidate or add a coherent subpackage
-SKIP = {"__pycache__", "locale"}
+SKIP = {"__pycache__", "locale", "icons"}  # data folders
 
 
 def folders(top: str) -> list[Path]:

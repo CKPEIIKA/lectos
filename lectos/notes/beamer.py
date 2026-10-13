@@ -6,7 +6,17 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from lectos.notes.markdown import MAX_NOTES_BYTES, MarkdownNotes, NotesError, NotesSource, Section
+from lectos.notes.markdown import (
+    MAX_NOTES_BYTES,
+    MarkdownNotes,
+    NotesError,
+    NotesSource,
+    Section,
+    load_sections,
+    replace_section,
+)
+from lectos.paths import write_atomic
+from lectos.state import edits_path
 
 _TOKEN_RE = re.compile(r"\\begin\s*\{frame\}|\\frame\b|\\frametitle\b|\\note\b")
 _COMMENT_RE = re.compile(r"(?<!\\)%.*")
@@ -138,15 +148,15 @@ class BeamerNotes:
     to the .tex or PDF); without one, frame N is taken to be slide N (wrong with overlays).
     """
 
-    def __init__(self, tex: Path, navs: list[Path]) -> None:
-        self.tex, self.navs = tex, navs
+    def __init__(self, tex: Path, navs: list[Path], edits: Path | None = None) -> None:
+        self.tex, self.navs, self.edits = tex, navs, edits
 
     def _nav(self) -> Path | None:
         return next((p for p in self.navs if p.exists()), None)
 
     def stamp(self) -> int:
         """Change marker: newest of the source and the page map."""
-        times = [p.stat().st_mtime_ns for p in (self.tex, self._nav()) if p is not None and p.exists()]
+        times = [p.stat().st_mtime_ns for p in (self.tex, self._nav(), self.edits) if p is not None and p.exists()]
         return max(times, default=0)
 
     def load(self) -> list[Section]:
@@ -159,11 +169,32 @@ class BeamerNotes:
             nav_text = nav.read_text(encoding="utf-8", errors="replace") if nav else None
         except OSError as exc:
             raise NotesError(f"cannot read {self.tex}: {exc}") from exc
-        return sections(tex, nav_text)
+        found = sections(tex, nav_text)
+        if self.edits is not None and self.edits.exists():
+            found = merge_edits(found, load_sections(self.edits))
+        return found
+
+    def save(self, slide: int, text: str) -> None:
+        """Keep an edited slide's notes in the edits file; the .tex stays as it is."""
+        if self.edits is None:
+            raise NotesError("no place to keep edited notes")
+        try:
+            before = self.edits.read_text(encoding="utf-8") if self.edits.exists() else ""
+            write_atomic(self.edits, replace_section(before, slide, text))
+        except OSError as exc:
+            raise NotesError(f"cannot write {self.edits}: {exc}") from exc
+
+
+def merge_edits(base: list[Section], edits: list[Section]) -> list[Section]:
+    """The extracted sections with the edited ones in place (new slides added), ordered by slide."""
+    edited = {s.slide: s for s in edits if s.slide is not None}
+    merged = [edited.pop(s.slide, s) if s.slide is not None else s for s in base]
+    merged += edited.values()
+    return sorted(merged, key=lambda s: (s.slide is not None, s.slide or 0))
 
 
 def open_notes(notes: Path, pdf: Path) -> NotesSource:
-    """Choose the notes source by file type: ``.tex`` is Beamer, anything else Markdown."""
+    """Choose the notes source by file type: ``.tex`` is Beamer (edits are kept in the state folder), else Markdown."""
     if notes.suffix == ".tex":
-        return BeamerNotes(notes, [notes.with_suffix(".nav"), pdf.with_suffix(".nav")])
+        return BeamerNotes(notes, [notes.with_suffix(".nav"), pdf.with_suffix(".nav")], edits_path(pdf))
     return MarkdownNotes(notes)

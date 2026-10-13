@@ -6,7 +6,7 @@ lectos-tui - terminal presenter console for PDF slides
 
 # SYNOPSIS
 
-*lectos-tui* [_OPTIONS_] _PDF_ [_NOTES_]
+*lectos-tui* [_OPTIONS_] _PDF_|_FOLDER_ [_NOTES_]
 
 # DESCRIPTION
 

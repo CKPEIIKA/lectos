@@ -85,6 +85,11 @@ HELP = {
         noop("Whether a note hit also previews its slide (never moves the projector)."),
         noop("Notes"),
     ),
+    "edit": Help(
+        "edit",
+        noop("Edit the notes of the viewed slide. Markdown notes are rewritten; a Beamer .tex is never changed."),
+        noop("Notes"),
+    ),
     "scroll-down": Help("scroll-down [N]", noop("Scroll the notes down."), noop("Notes")),
     "scroll-up": Help("scroll-up [N]", noop("Scroll the notes up."), noop("Notes")),
     "timer": Help("timer", noop("Start or pause the timer."), noop("Timer")),
@@ -138,6 +143,11 @@ HELP = {
     "export": Help(
         "export [FILE]", noop("Write the slides with your ink to a new PDF (never overwrites)."), noop("Drawing")
     ),
+    "export-ink": Help(
+        "export-ink [FILE]",
+        noop("Write this slide's (or the board's) drawing layer alone to a transparent PNG (never overwrites)."),
+        noop("Drawing"),
+    ),
     "laser": Help(
         "laser [on|off]", noop("Laser pointer: the dot follows the mouse over the large preview."), noop("Laser")
     ),
@@ -145,15 +155,25 @@ HELP = {
     "laser-size": Help("laser-size N", noop("Laser radius in pixels, 3..30."), noop("Laser")),
     "laser-style": Help("laser-style NAME", noop("Laser shape: dot, ring, cross."), noop("Laser")),
     "layout": Help(
-        "layout auto|compact|wide|toggle",
-        noop("Console layout: notebook, big screen, or by window width."),
+        "layout auto|compact|wide|draw|toggle",
+        noop("Console layout: notebook, big screen, quick drawing, or by window width."),
         noop("View"),
     ),
     "upcoming": Help(
         "upcoming N", noop("Slides shown after the current one in the wide layout's filmstrip, 0..16."), noop("View")
     ),
     "previous": Help("previous N", noop("Slides shown before the current one in the filmstrip, 0..8."), noop("View")),
+    "sketch": Help(
+        "sketch [on|off]", noop("Quick drawing layout: the slide large with a drawing toolbar (key s)."), noop("View")
+    ),
+    "panel": Help(
+        "panel NAME [on|off]",
+        noop("Show or hide a console part: notes, audience, next, strip (filmstrip) or status."),
+        noop("View"),
+    ),
+    "settings": Help("settings", noop("Open the settings window."), noop("View")),
     "vim": Help("vim [on|off]", noop("Vim-style keys in the GTK console."), noop("View")),
+    "open": Help("open", noop("Choose other slides, notes or a folder."), noop("General")),
     "help": Help("help [COMMAND]", noop("List every command with usage and keys, or describe one."), noop("General")),
     "quit": Help("quit", noop("Save and quit. q does the same."), noop("General")),
     "q": Help("q", noop("Same as quit."), noop("General")),

@@ -258,3 +258,45 @@ def test_a_poppler_failure_while_building_the_console_is_an_error_exit(
     assert cli._dispatch("tui", "zathura", parse(), Options()) == 1
     assert "pdfinfo failed" in capsys.readouterr().err
     assert FakeZathura.instances[0].events == ["start", "stop"]
+
+
+# ---- starting with a folder, with notes next to the slides, or with nothing ----
+def test_slides_and_notes_are_found_in_a_folder(chosen: list[tuple[str, str]], tmp_path: Path, monkeypatch) -> None:
+    seen = []
+    monkeypatch.setattr(cli, "_dispatch", lambda console, projector, args, options: seen.append(args) or 0)
+    (tmp_path / "talk.pdf").write_bytes(b"%PDF-")
+    (tmp_path / "talk.md").write_text("notes")
+    assert cli.main([str(tmp_path)]) == 0
+    assert (seen[0].pdf, seen[0].notes) == (tmp_path / "talk.pdf", tmp_path / "talk.md")
+    assert cli.main([str(tmp_path), str(tmp_path / "other.md")]) == 2  # an explicit notes file must exist
+
+
+def test_notes_next_to_the_slides_are_used_without_being_named(monkeypatch, tmp_path: Path) -> None:
+    seen = []
+    monkeypatch.setattr(cli, "_dispatch", lambda console, projector, args, options: seen.append(args) or 0)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "none"))
+    (tmp_path / "talk.pdf").write_bytes(b"%PDF-")
+    (tmp_path / "talk.tex").write_text("x")
+    assert cli.main([str(tmp_path / "talk.pdf")]) == 0
+    assert seen[0].notes == tmp_path / "talk.tex"
+
+
+def test_a_folder_without_a_pdf_is_an_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main([str(tmp_path)]) == 2
+    assert "no PDF in" in capsys.readouterr().err
+
+
+def test_without_arguments_the_gtk_console_asks_for_slides(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    calls: list[tuple[object, ...]] = []
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "none"))
+    fake_module(monkeypatch, "lectos.gtk.app", run=lambda *a, **k: calls.append(a) or 0)
+    assert cli.main([]) == 0
+    assert calls[0][:2] == (None, None)
+
+
+def test_the_terminal_console_cannot_start_without_slides(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "none"))
+    assert cli.main_tui([]) == 2
+    assert "needs the slides" in capsys.readouterr().err

@@ -19,6 +19,11 @@ def state_path(pdf: Path, kind: str = "") -> Path:
     return root / (f"{digest}.{kind}.json" if kind else f"{digest}.json")
 
 
+def edits_path(pdf: Path) -> Path:
+    """Where edited notes for a Beamer deck are kept (a Markdown file; the .tex is never touched)."""
+    return state_path(pdf, "notes").with_suffix(".md")
+
+
 def load(pdf: Path, kind: str = "") -> dict[str, object]:
     """Return saved state, or an empty dict if absent or unreadable."""
     try:

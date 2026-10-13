@@ -38,7 +38,7 @@ exclude = ["build", "dist", "refs"]
 
 # GTK/Poppler bindings are typeless GObject introspection, resolved at runtime only.
 [[tool.ty.overrides]]
-include = ["lectos/gtk/*.py", "tests/gtk/*.py"]
+include = ["lectos/gtk/**/*.py", "tests/gtk/**/*.py"]
 
 [tool.ty.overrides.rules]
 unresolved-import = "ignore"
@@ -93,8 +93,8 @@ max-statements = 40
 "scripts/**/*.py" = ["C901", "PLR0912", "PLR0915"]
 
 # gi.require_version must run before the gi.repository imports, so E402 is ignored in the GTK modules.
-"lectos/gtk/*.py" = ["E402"]
-"tests/gtk/*.py" = ["E402"]
+"lectos/gtk/**/*.py" = ["E402"]
+"tests/gtk/**/*.py" = ["E402"]
 # The Unicode math table deliberately contains Greek letters and operators that resemble ASCII.
 "lectos/notes/unimath.py" = ["RUF001"]
 # The i18n tests assert on Russian text.

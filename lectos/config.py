@@ -93,6 +93,7 @@ class Options:
     layout: str = layouts.AUTO
     previous: int = layouts.DEFAULT_PREVIOUS
     upcoming: int = layouts.DEFAULT_UPCOMING
+    hidden: tuple[str, ...] = ()  # console panels hidden at startup: notes audience next strip status
     language: str = "auto"  # "auto" reads the environment, or "en" / "ru"
     console: str | None = None  # "gtk" or "tui"; None means the entry point decides
     projector: str | None = None  # "gtk" or "zathura"; None means the entry point decides
@@ -152,6 +153,16 @@ def _count(section: dict[str, object], key: str, default: int, maximum: int) -> 
     if not 0 <= value <= maximum:
         raise ConfigError(f"[console] {key} must be 0..{maximum}")
     return value
+
+
+def _hidden(section: dict[str, object]) -> tuple[str, ...]:
+    raw = section.get("hide", [])
+    if not isinstance(raw, list) or not all(isinstance(i, str) for i in raw):
+        raise ConfigError("[console] hide must be a list of names")
+    bad = sorted(set(raw) - set(layouts.PANELS))
+    if bad:
+        raise ConfigError(f"[console] hide: unknown panel {bad[0]!r} (known: {', '.join(layouts.PANELS)})")
+    return tuple(dict.fromkeys(raw))
 
 
 def _choice(section: dict[str, object], key: str, allowed: tuple[str, ...]) -> str | None:
@@ -254,7 +265,7 @@ def parse(data: dict[str, object], base: Path) -> Options:
     if unknown:
         raise ConfigError(f"unknown section [{unknown[0]}]")
     black = _section(data, "blackout", {"image", "text", "background", "text_color"})
-    console = _section(data, "console", {"vim", "target_min", "layout", "previous", "upcoming"})
+    console = _section(data, "console", {"vim", "target_min", "layout", "previous", "upcoming", "hide"})
     head = _section(data, "header", {"start", "title", "end"})
     draw = _section(data, "drawing", {"color", "width", "highlighter_alpha", "eraser_radius", "smoothing", "board"})
     pointer = _section(data, "laser", {"color", "size", "style", "halo"})
@@ -275,6 +286,7 @@ def parse(data: dict[str, object], base: Path) -> Options:
         layout=_layout_mode(console),
         previous=_count(console, "previous", layouts.DEFAULT_PREVIOUS, layouts.MAX_PREVIOUS),
         upcoming=_count(console, "upcoming", layouts.DEFAULT_UPCOMING, layouts.MAX_UPCOMING),
+        hidden=_hidden(console),
         language=_choice(ui, "language", ("auto", *i18n.LANGUAGES)) or "auto",
         console=_choice(ui, "console", CONSOLES),
         projector=_choice(ui, "projector", PROJECTORS),

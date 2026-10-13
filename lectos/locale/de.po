@@ -152,9 +152,6 @@ msgstr "Laserradius in Pixeln, 3..30."
 msgid "Laser shape: dot, ring, cross."
 msgstr "Laserform: dot (Punkt), ring (Ring), cross (Kreuz)."
 
-msgid "Console layout: notebook, big screen, or by window width."
-msgstr "Konsolenlayout: Notebook, großer Bildschirm oder nach Fensterbreite."
-
 msgid "Slides shown after the current one in the wide layout's filmstrip, 0..16."
 msgstr "Folien nach der aktuellen im Filmstreifen des breiten Layouts, 0..16."
 
@@ -388,9 +385,6 @@ msgstr "Folien und Notizen durchsuchen, Enter zum Suchen"
 
 msgid "  (not supported by this projector)"
 msgstr "  (von diesem Projektor nicht unterstützt)"
-
-msgid "layout: auto, compact, wide or toggle"
-msgstr "layout: auto, compact, wide oder toggle"
 
 msgid "goto needs a slide number"
 msgstr "goto braucht eine Foliennummer"
@@ -709,3 +703,171 @@ msgstr "(Projektor {n})"
 
 msgid "(paused)"
 msgstr "(angehalten)"
+
+msgid "Edit the notes of the viewed slide. Markdown notes are rewritten; a Beamer .tex is never changed."
+msgstr "Notizen der angezeigten Folie bearbeiten. Markdown-Notizen werden neu geschrieben; eine Beamer-.tex-Datei bleibt unverändert."
+
+msgid "Write this slide's (or the board's) drawing layer alone to a transparent PNG (never overwrites)."
+msgstr "Nur die Zeichenebene dieser Folie (oder der Tafel) als transparente PNG schreiben (überschreibt nie)."
+
+msgid "Console layout: notebook, big screen, quick drawing, or by window width."
+msgstr "Konsolenlayout: Notebook, großer Bildschirm, Schnellzeichnen oder nach Fensterbreite."
+
+msgid "Quick drawing layout: the slide large with a drawing toolbar (key s)."
+msgstr "Schnellzeichen-Layout: große Folie mit Zeichenleiste (Taste s)."
+
+msgid "Show or hide a console part: notes, audience, next, strip (filmstrip) or status."
+msgstr "Einen Konsolenteil ein- oder ausblenden: notes, audience, next, strip (Filmstreifen) oder status."
+
+msgid "Open the settings window."
+msgstr "Das Einstellungsfenster öffnen."
+
+msgid "Choose other slides, notes or a folder."
+msgstr "Andere Folien, Notizen oder einen Ordner wählen."
+
+msgid "layout: auto, compact, wide, draw or toggle"
+msgstr "layout: auto, compact, wide, draw oder toggle"
+
+msgid "no notes are loaded: start lectos with a notes file or use Open"
+msgstr "Es sind keine Notizen geladen: lectos mit einer Notizdatei starten oder Öffnen benutzen"
+
+msgid "opening other slides is not available here"
+msgstr "Andere Folien öffnen ist hier nicht möglich"
+
+msgid "Export this drawing layer (PNG)"
+msgstr "Diese Zeichenebene exportieren (PNG)"
+
+msgid "Quick drawing layout"
+msgstr "Schnellzeichen-Layout"
+
+msgid "Edit notes of this slide…"
+msgstr "Notizen dieser Folie bearbeiten…"
+
+msgid "Open other slides…"
+msgstr "Andere Folien öffnen…"
+
+msgid "Settings…"
+msgstr "Einstellungen…"
+
+msgid "notes of slide {n} saved"
+msgstr "Notizen von Folie {n} gespeichert"
+
+msgid "wrote {path}"
+msgstr "{path} geschrieben"
+
+msgid "lectos console - {name}"
+msgstr "lectos Konsole - {name}"
+
+msgid "panel needs one of: {names}"
+msgstr "panel braucht eines von: {names}"
+
+msgid "lectos projector - {name}"
+msgstr "lectos Projektor - {name}"
+
+msgid "pen width"
+msgstr "Stiftbreite"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "Speichern (Strg+Eingabe)"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Discard (Esc)"
+msgstr "Verwerfen (Esc)"
+
+msgid "Notes for slide {n}"
+msgstr "Notizen für Folie {n}"
+
+msgid "Lecture notes"
+msgstr "Vortragsnotizen"
+
+msgid "Audience preview"
+msgstr "Vorschau fürs Publikum"
+
+msgid "Next slide preview"
+msgstr "Vorschau der nächsten Folie"
+
+msgid "Filmstrip (wide layout)"
+msgstr "Filmstreifen (breites Layout)"
+
+msgid "Status bar"
+msgstr "Statusleiste"
+
+msgid "h j k l, :, / and friends"
+msgstr "h j k l, :, / und Verwandte"
+
+msgid "Show the slide for note hits"
+msgstr "Folie bei Notiztreffern zeigen"
+
+msgid "a search hit in the notes also previews its slide"
+msgstr "ein Treffer in den Notizen zeigt auch seine Folie in der Vorschau"
+
+msgid "Slides before the current one"
+msgstr "Folien vor der aktuellen"
+
+msgid "Slides after the current one"
+msgstr "Folien nach der aktuellen"
+
+msgid "Lecture length (minutes)"
+msgstr "Vortragslänge (Minuten)"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Show on screen"
+msgstr "Auf dem Bildschirm zeigen"
+
+msgid "Behaviour"
+msgstr "Verhalten"
+
+msgid "lectos - open a presentation"
+msgstr "lectos - Präsentation öffnen"
+
+msgid "Slides"
+msgstr "Folien"
+
+msgid "not chosen"
+msgstr "nicht gewählt"
+
+msgid "none (optional)"
+msgstr "keine (optional)"
+
+msgid "Choose…"
+msgstr "Wählen…"
+
+msgid "Open a folder…"
+msgstr "Ordner öffnen…"
+
+msgid "Start"
+msgstr "Starten"
+
+msgid "Open a presentation"
+msgstr "Präsentation öffnen"
+
+msgid "Choose the PDF slides and, if you have them, the lecture notes (Markdown or Beamer .tex)."
+msgstr "Wähle die PDF-Folien und, falls vorhanden, die Vortragsnotizen (Markdown oder Beamer-.tex)."
+
+msgid "Choose the slides"
+msgstr "Folien wählen"
+
+msgid "Choose the notes"
+msgstr "Notizen wählen"
+
+msgid "Choose a folder"
+msgstr "Ordner wählen"
+
+msgid "  (found next to the slides)"
+msgstr "  (neben den Folien gefunden)"
+
+msgid "no PDF in {folder}"
+msgstr "kein PDF in {folder}"
+
+msgid "clear slide ink"
+msgstr "Tinte der Folie löschen"
+
+msgid "quick drawing layout (s)"
+msgstr "Schnellzeichen-Layout (s)"

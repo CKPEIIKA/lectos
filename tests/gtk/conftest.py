@@ -18,7 +18,7 @@ try:
 except (ImportError, ValueError):
     HAVE_DISPLAY = False
 
-collect_ignore_glob = [] if HAVE_DISPLAY else ["test_*.py"]
+collect_ignore_glob = [] if HAVE_DISPLAY else ["test_*.py", "widgets/test_*.py"]
 EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
 
 if HAVE_DISPLAY:

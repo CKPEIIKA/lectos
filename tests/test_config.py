@@ -170,3 +170,14 @@ def test_pen_width_bounds_come_from_the_ink_module(tmp_path: Path) -> None:
     assert config.load(write(tmp_path, "[drawing]\nwidth = 40\n")).drawing.width == 40
     with pytest.raises(ConfigError, match=r"width must be 1\.\.40"):
         config.load(write(tmp_path, "[drawing]\nwidth = 41\n"))
+
+
+def test_hidden_panels_are_listed_validated_and_deduplicated(tmp_path: Path) -> None:
+    assert config.load(write(tmp_path, '[console]\nhide = ["strip", "notes", "strip"]\n')).hidden == ("strip", "notes")
+    assert Options().hidden == ()
+    for text, message in (
+        ('[console]\nhide = "notes"\n', "list of names"),
+        ('[console]\nhide = ["menu"]\n', "unknown panel"),
+    ):
+        with pytest.raises(ConfigError, match=message):
+            config.load(write(tmp_path, text))

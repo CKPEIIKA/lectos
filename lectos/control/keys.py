@@ -9,7 +9,8 @@ ACTIONS = {
     ":": "command-line", "/": "search", "n": "hit-next", "N": "hit-prev",
     "f": "projector-fullscreen", "F": "fullscreen", "b": "blackout",
     "z": "freeze", "o": "overview", "t": "timer",
-    "d": "draw", "e": "eraser", "u": "undo", "U": "redo", "B": "board", "p": "laser", "?": "help",
+    "d": "draw", "e": "eraser", "s": "sketch", "E": "edit", "S": "settings",
+    "u": "undo", "U": "redo", "B": "board", "p": "laser", "?": "help",
 }  # fmt: skip
 
 

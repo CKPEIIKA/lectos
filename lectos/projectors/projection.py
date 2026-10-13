@@ -85,7 +85,8 @@ COMMAND_CAPS = {
     "blackout": "blackout", "board": "board", "laser": "laser",
     "clear": "ink", "undo": "ink", "redo": "ink", "draw": "ink", "eraser": "ink", "color": "ink", "width": "ink",
     "highlighter": "ink", "smooth": "ink", "eraser-size": "ink", "highlight-alpha": "ink", "clear-all": "ink",
-    "restore-all": "ink", "board-style": "board", "laser-color": "laser", "laser-size": "laser", "laser-style": "laser",
+    "restore-all": "ink", "sketch": "ink", "board-style": "board",
+    "laser-color": "laser", "laser-size": "laser", "laser-style": "laser",
 }  # fmt: skip
 
 

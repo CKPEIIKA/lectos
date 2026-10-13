@@ -277,14 +277,16 @@ def run_app(monkeypatch, wait_for, **kwargs):
     real = app_module._open_console
 
     def opened(app, pdf, core, proj, *, notes, options):
-        real(app, pdf, core, proj, notes=notes, options=options)
+        session = real(app, pdf, core, proj, notes=notes, options=options)
         holder["windows"] = app.get_windows()
         GLib.timeout_add(150, lambda: [w.close() for w in app.get_windows()] and False)
+        return session
 
     monkeypatch.setattr(app_module, "_open_console", opened)
     monkeypatch.setattr(app_module, "POLL_MS", 40)
     monkeypatch.setattr(app_module, "SAVE_MS", 40)
-    status = app_module.run(PDF, None, config.Options(), windowed=True, monitor=None, **kwargs)
+    deck = kwargs.pop("pdf", PDF)
+    status = app_module.run(deck, None, config.Options(), windowed=True, monitor=None, **kwargs)
     return status, holder
 
 
@@ -324,3 +326,81 @@ def test_the_timers_reload_a_changed_pdf_and_save_what_changed(rig, tmp_path, mo
         ctx.iteration(False)
     assert refreshed
     assert saved
+
+
+def test_without_slides_the_application_shows_the_start_window(monkeypatch, wait_for) -> None:
+    shown: list[object] = []
+    real = app_module.Launcher.show_start
+
+    def watched(self) -> None:
+        real(self)
+        shown.extend(self.app.get_windows())
+        GLib.timeout_add(150, lambda: [w.close() for w in self.app.get_windows()] and False)
+
+    monkeypatch.setattr(app_module.Launcher, "show_start", watched)
+    assert run_app(monkeypatch, wait_for, pdf=None, projector="none")[0] == 0
+    assert [type(w).__name__ for w in shown] == ["StartWindow"]
+
+
+def test_the_launcher_switches_to_other_slides_and_a_failing_projector_ends_it(rig, application, monkeypatch) -> None:
+    launcher = app_module.Launcher(application, config.Options(), projector="none", windowed=True, monitor=None)
+    launcher.begin(PDF, None)
+    first = launcher.session
+    assert first is not None
+    assert first.console.opener == launcher.show_start
+    seen = []
+    real_start = app_module.StartWindow
+    monkeypatch.setattr(
+        app_module, "StartWindow", lambda app, on_start: seen.append(real_start(app, on_start)) or seen[-1]
+    )
+    launcher.show_start()
+    seen[0].on_start(PDF, EXAMPLES / "notes.md")  # the user picked slides and notes
+    second = launcher.session
+    assert second is not None
+    assert second is not first
+    assert second.console.notes is not None
+    second.finish()
+    launcher.session = None
+    seen[0].on_start(PDF, None)  # with nothing presented yet there is nothing to finish
+    third = launcher.session
+    assert third is not None
+    third.finish()
+    monkeypatch.setattr(
+        app_module, "make_projector", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("no projector"))
+    )
+    launcher.begin(PDF, None)
+    assert launcher.failure == ["no projector"]
+
+
+def test_bundled_icons_are_registered_once() -> None:
+    from gi.repository import Gdk, Gtk
+
+    app_module.register_icons()
+    app_module.register_icons()
+    theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+    assert list(theme.get_search_path()).count(str(app_module.ICON_DIR)) == 1
+    assert theme.has_icon("lectos")
+    assert theme.has_icon("lectos-projector")
+
+
+def test_the_windows_say_which_one_they_are(rig, application) -> None:
+    assert rig.console.get_title() == "lectos console - slides.pdf"
+    assert rig.console.get_icon_name() == "lectos"
+    window = ProjectorWindow(application, rig.core.stage, rig.core.ink, None, config.Blackout(), name="slides.pdf")
+    assert window.get_title() == "lectos projector - slides.pdf"
+    assert window.get_icon_name() == "lectos-projector"
+    window.destroy()
+
+
+def test_the_pointer_shows_what_the_mouse_will_do(pen) -> None:
+    inp, ink, _stage = pen
+    assert inp.area.get_cursor() is None
+    ink.tool.mouse_draw = True
+    ink.notify()
+    assert inp.area.get_cursor().get_name() == "crosshair"
+    ink.tool.eraser = True
+    ink.notify()
+    assert inp.area.get_cursor().get_name() == "cell"
+    ink.tool.mouse_draw = False
+    ink.notify()
+    assert inp.area.get_cursor() is None

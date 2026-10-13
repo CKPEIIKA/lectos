@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Protocol
 
@@ -11,6 +12,8 @@ from lectos.draw import render
 from lectos.model.deck import Deck
 from lectos.model.ink import BOARD_LAYER, Ink, slide_layer
 from lectos.model.style import LaserStyle
+
+PNG_MIN_WIDTH = 1920  # pixels: an exported drawing layer is at least this wide
 
 
 class Slides(Protocol):
@@ -68,6 +71,14 @@ class Stage:
         pw, ph = self.size(page)
         fx, fy = lx / pw, ly / ph
         return (fx, fy) if 0 <= fx <= 1 and 0 <= fy <= 1 else None
+
+    def export_ink_png(self, path: Path, page: int) -> None:
+        """Write the drawing layer of what is shown for ``page`` alone, on a transparent background."""
+        width, height = self.size(page)
+        scale = max(1.0, PNG_MIN_WIDTH / width)
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, math.ceil(width * scale), math.ceil(height * scale))
+        render.draw_strokes(cairo.Context(surface), self.ink.strokes(self.layer(page)), scale)
+        surface.write_to_png(str(path))
 
     def export_pdf(self, path: Path) -> int:
         """Write every slide with its ink to a new PDF (plus the chalkboard if it has ink); returns the page count."""

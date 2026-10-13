@@ -251,7 +251,7 @@ def test_a_note_hit_previews_its_slide_without_moving_the_projector(rig) -> None
 @pytest.mark.parametrize(
     ("command", "message"),
     [
-        ("layout bogus", "layout: auto, compact, wide or toggle"),
+        ("layout bogus", "layout: auto, compact, wide, draw or toggle"),
         ("upcoming x", "upcoming needs a number 0..16"),
         ("previous x", "previous needs a number 0..8"),
         ("goto x", "goto needs a slide number"),

@@ -13,15 +13,18 @@ lectos \- presenter console and projector for PDF slides with Markdown or Beamer
 .PP
 .SH SYNOPSIS
 .PP
-\fBlectos\fR [\fIOPTIONS\fR] \fIPDF\fR [\fINOTES\fR]
+\fBlectos\fR [\fIOPTIONS\fR] [\fIPDF\fR|\fIFOLDER\fR] [\fINOTES\fR]
 .br
-\fBlectos\-tui\fR [\fIOPTIONS\fR] \fIPDF\fR [\fINOTES\fR]
+\fBlectos\-tui\fR [\fIOPTIONS\fR] \fIPDF\fR|\fIFOLDER\fR [\fINOTES\fR]
 .PP
 .SH DESCRIPTION
 .PP
 \fBlectos\fR shows your slides (a compiled PDF) to the audience in a projector window and gives you a presenter
 console: the current, projected and next slide, your notes, a timer with your standing against the plan, an overview
 grid, search, freeze and blackout for the projector, a chalkboard, ink, and a laser pointer.\&
+.PP
+Without arguments \fBlectos\fR opens a window to choose the slides, the notes and folders.\& Given only the PDF it uses the
+notes next to it (\fIslides.\&tex\fR, \fIslides.\&md\fR, else \fInotes.\&tex\fR, \fInotes.\&md\fR); given a folder it uses the PDF in it.\&
 .PP
 \fINOTES\fR is a Markdown file (sections tied to slides with \fB<!\&\-\- slide: N \-\->\fR markers, LaTeX math between \fB$\fR signs) or
 a Beamer \fB.\&tex\fR file, whose \fB\enote{}\fR commands become the notes.\& \fBlectos\fR never compiles anything: build the PDF
@@ -43,10 +46,10 @@ Presenter interface.\& Default: \fBgtk\fR, or \fBconsole\fR under \fB[ui]\fR in 
 Audience window.\& Default: \fBgtk\fR (\fBzathura\fR for \fBlectos\-tui\fR), or \fBprojector\fR under \fB[ui]\fR.\&
 .PP
 .RE
-\fB\-\-layout\fR \fIauto\fR|\fIcompact\fR|\fIwide\fR
+\fB\-\-layout\fR \fIauto\fR|\fIcompact\fR|\fIwide\fR|\fIdraw\fR
 .RS 4
-GTK console layout: for a notebook, for a big screen (adds a filmstrip of previous and upcoming slides), or chosen by
-window width.\&
+GTK console layout: for a notebook, for a big screen (adds a filmstrip of previous and upcoming slides), chosen by
+window width, or the quick drawing layout (large slide, drawing toolbar).\&
 .PP
 .RE
 \fB\-\-lang\fR \fIauto\fR|\fIen\fR|\fIru\fR|\fIde\fR
@@ -124,7 +127,12 @@ overview, freeze, blackout, chalkboard, laser pointer, timer
 projector fullscreen, console fullscreen
 .PP
 .RE
-Every button and menu entry is also a command, for example \fB:target 1h30\fR, \fB:color red\fR, \fB:clear\-all\fR, \fB:export\fR.\&
+\fBs\fR, \fBE\fR, \fBS\fR
+.RS 4
+quick drawing layout, edit this slide'\&s notes, settings window
+.PP
+.RE
+Every button and menu entry is also a command, for example \fB:target 1h30\fR, \fB:color red\fR, \fB:clear\-all\fR, \fB:export\fR, \fB:panel strip off\fR, \fB:export\-ink\fR.\&
 .PP
 .SH FILES
 .PP
@@ -136,7 +144,8 @@ source tree.\&
 .RE
 \fI$XDG_STATE_HOME/lectos/\fR
 .RS 4
-Per\-presentation recovery state (current slide, timer, layout) and ink, as small JSON files.\&
+Per\-presentation recovery state (current slide, timer, layout, hidden panels) and ink, as small JSON files, and
+notes you edited for a Beamer deck (the \fI.\&tex\fR itself is never changed).\&
 .PP
 .RE
 \fI$XDG_CACHE_HOME/lectos/math/\fR

@@ -14,6 +14,8 @@ from lectos.draw.stage import Stage
 from lectos.model.ink import Ink
 
 MOUSE_PRESSURE = 0.7
+DRAW_CURSOR = "crosshair"
+ERASE_CURSOR = "cell"
 
 
 class InkInput:
@@ -37,6 +39,14 @@ class InkInput:
         drag.connect("drag-update", self._mouse_update)
         drag.connect("drag-end", lambda *_: self._up())
         area.add_controller(drag)
+        ink.subscribe(self.refresh_cursor)
+        self.refresh_cursor()
+
+    def refresh_cursor(self) -> None:
+        """The pointer shows what the mouse will do: draw, erase, or (default cursor) nothing."""
+        tool = self.ink.tool
+        name = (ERASE_CURSOR if tool.eraser else DRAW_CURSOR) if tool.mouse_draw else None
+        self.area.set_cursor_from_name(name)
 
     def _layer(self) -> str:
         return self.stage.layer(self.get_page())

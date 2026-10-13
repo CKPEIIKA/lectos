@@ -114,3 +114,54 @@ def test_oversized_tex_is_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(beamer, "MAX_NOTES_BYTES", 10)
     with pytest.raises(NotesError, match="exceeds"):
         beamer.BeamerNotes(tex, []).load()
+
+
+def test_edited_notes_live_beside_the_tex_and_never_change_it(tmp_path: Path) -> None:
+    tex, edits = tmp_path / "a.tex", tmp_path / "state" / "a.md"
+    tex.write_text(TEX)
+    source = beamer.BeamerNotes(tex, [], edits)
+    before = source.load()
+    source.save(1, "my own words")
+    source.save(9, "a slide the tex has no notes for")
+    after = {s.slide: s.text.strip() for s in source.load()}
+    assert after[1] == "my own words"
+    assert after[9] == "a slide the tex has no notes for"
+    assert after[2] == {s.slide: s.text.strip() for s in before}[2]
+    assert tex.read_text() == TEX
+    assert source.stamp() >= edits.stat().st_mtime_ns
+
+
+def test_merging_keeps_order_by_slide_and_untied_sections_first() -> None:
+    base = [beamer.Section(None, "front"), beamer.Section(3, "c"), beamer.Section(1, "a")]
+    edits = [beamer.Section(3, "C"), beamer.Section(2, "B"), beamer.Section(None, "ignored")]
+    assert [(s.slide, s.text) for s in beamer.merge_edits(base, edits)] == [
+        (None, "front"),
+        (1, "a"),
+        (2, "B"),
+        (3, "C"),
+    ]
+
+
+def test_a_source_without_an_edits_file_cannot_save(tmp_path: Path) -> None:
+    tex = tmp_path / "a.tex"
+    tex.write_text(TEX)
+    with pytest.raises(beamer.NotesError, match="no place"):
+        beamer.BeamerNotes(tex, []).save(1, "x")
+
+
+def test_an_edits_path_that_cannot_be_written_is_a_notes_error(tmp_path: Path) -> None:
+    tex, blocker = tmp_path / "a.tex", tmp_path / "file"
+    tex.write_text(TEX)
+    blocker.write_text("not a folder")
+    with pytest.raises(beamer.NotesError, match="cannot write"):
+        beamer.BeamerNotes(tex, [], blocker / "edits.md").save(1, "x")
+
+
+def test_open_notes_keeps_tex_edits_in_the_state_folder(tmp_path: Path) -> None:
+    tex, pdf = tmp_path / "a.tex", tmp_path / "a.pdf"
+    tex.write_text(TEX)
+    source = beamer.open_notes(tex, pdf)
+    assert isinstance(source, beamer.BeamerNotes)
+    assert source.edits is not None
+    assert source.edits.parent.name == "lectos"  # the state folder, not next to the .tex
+    assert source.edits.parent != tex.parent

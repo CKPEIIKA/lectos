@@ -11,6 +11,7 @@ from pathlib import Path
 
 from lectos import i18n
 from lectos.config import ConfigError, Options, load
+from lectos.paths import discover, notes_for
 
 CONSOLE_CHOICES = ("gtk", "tui")
 PROJECTOR_CHOICES = ("gtk", "zathura", "none")
@@ -24,9 +25,17 @@ def build_parser(prog: str) -> argparse.ArgumentParser:
         description="Presenter console and projector for PDF slides with Markdown/LaTeX lecture notes.",
     )
     parser.add_argument("--version", action="version", version=version("lectos"))
-    parser.add_argument("pdf", type=Path, help="Compiled slides (PDF).")
     parser.add_argument(
-        "notes", type=Path, nargs="?", help="Lecture notes: Markdown, or a Beamer .tex file (its \\note{} commands)."
+        "pdf",
+        type=Path,
+        nargs="?",
+        help="Compiled slides (PDF), or a folder with slides and notes. Omit to choose in a window.",
+    )
+    parser.add_argument(
+        "notes",
+        type=Path,
+        nargs="?",
+        help="Lecture notes: Markdown, or a Beamer .tex file (its \\note{} commands). Default: next to the slides.",
     )
     parser.add_argument(
         "--console", choices=CONSOLE_CHOICES, help="Presenter interface (default: gtk, or [ui] console)."
@@ -37,7 +46,9 @@ def build_parser(prog: str) -> argparse.ArgumentParser:
         help="Audience window (default: gtk, or [ui] projector; tui: zathura).",
     )
     parser.add_argument(
-        "--layout", choices=("auto", "compact", "wide"), help="GTK console layout (default: auto, by window width)."
+        "--layout",
+        choices=("auto", "compact", "wide", "draw"),
+        help="GTK console layout (default: auto, by window width).",
     )
     parser.add_argument(
         "--lang", choices=("auto", "en", "ru", "de"), help="Interface language (default: from the environment)."
@@ -50,13 +61,27 @@ def build_parser(prog: str) -> argparse.ArgumentParser:
     return parser
 
 
+def _resolve_inputs(args: argparse.Namespace) -> str:
+    """Fill in the slides and notes from a folder or from next to the slides; returns an error text or ''."""
+    if args.pdf is not None and args.pdf.is_dir():
+        found = discover(args.pdf)
+        if found is None:
+            return f"no PDF in {args.pdf}"
+        args.pdf, found_notes = found
+        args.notes = args.notes or found_notes
+    elif args.pdf is not None and args.notes is None:
+        args.notes = notes_for(args.pdf)  # slides.tex or slides.md next to slides.pdf
+    missing = next((p for p in (args.pdf, args.notes) if p is not None and not p.is_file()), None)
+    return f"not a file: {missing}" if missing is not None else ""
+
+
 def main(argv: Sequence[str] | None = None, *, default_console: str = "gtk", default_projector: str = "gtk") -> int:
     """Run the chosen console with the chosen projector."""
     args = build_parser("lectos" if default_console == "gtk" else "lectos-tui").parse_args(argv)
-    for path in (args.pdf, args.notes):
-        if path is not None and not path.is_file():
-            print(f"lectos: not a file: {path}", file=sys.stderr)
-            return 2
+    failure = _resolve_inputs(args)
+    if failure:
+        print(f"lectos: {failure}", file=sys.stderr)
+        return 2
     try:
         options = load(args.config)
     except ConfigError as exc:
@@ -84,11 +109,14 @@ def main_tui(argv: Sequence[str] | None = None) -> int:
 def _dispatch(console: str, projector: str, args: argparse.Namespace, options: Options) -> int:
     from lectos.notes.beamer import open_notes
 
-    source = open_notes(args.notes, args.pdf) if args.notes else None
+    source = open_notes(args.notes, args.pdf) if args.notes and args.pdf else None
     if console == "gtk":
         from lectos.gtk.app import run  # imports GTK only when actually presenting
 
         return run(args.pdf, source, options, projector=projector, windowed=args.windowed, monitor=args.monitor)
+    if args.pdf is None:
+        print("lectos: the terminal console needs the slides (a PDF or a folder)", file=sys.stderr)
+        return 2
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
         print("lectos: the terminal console needs an interactive terminal", file=sys.stderr)
         return 2

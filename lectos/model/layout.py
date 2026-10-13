@@ -4,8 +4,10 @@ from __future__ import annotations
 
 COMPACT = "compact"
 WIDE = "wide"
+DRAW = "draw"  # the slide as large as possible with a drawing toolbar, for quick sketching
 AUTO = "auto"
-MODES = (AUTO, COMPACT, WIDE)
+MODES = (AUTO, COMPACT, WIDE, DRAW)
+PANELS = ("notes", "audience", "next", "strip", "status")  # parts of the console that can be hidden
 WIDE_ENTER_PX = 1500  # auto switches to wide at this window width ...
 WIDE_LEAVE_PX = 1380  # ... and back to compact below this one, so resizing does not flicker
 DEFAULT_PREVIOUS = 3
@@ -19,7 +21,7 @@ STRIP_GAP_PX = 6
 
 def resolve(mode: str, width: int, current: str = COMPACT) -> str:
     """The layout to show for a mode and window width. ``current`` provides hysteresis in auto mode."""
-    if mode in (COMPACT, WIDE):
+    if mode in (COMPACT, WIDE, DRAW):
         return mode
     if current == WIDE:
         return WIDE if width >= WIDE_LEAVE_PX else COMPACT

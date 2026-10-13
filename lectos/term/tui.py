@@ -41,7 +41,7 @@ LOOP_S = 0.25
 SAVE_EVERY_S = 2.0
 GTK_ONLY = {
     "laser", "laser-color", "laser-size", "laser-style", "show-slide", "vim", "projector-fullscreen", "export",
-    "layout", "upcoming", "previous",
+    "layout", "upcoming", "previous", "sketch", "panel", "settings", "edit", "open", "export-ink",
 }  # fmt: skip
 HINT = noop(" :command  /search  o overview  l/h next/prev  j/k scroll  ? help")  # shown through tr()
 PANEL_ROWS = 9  # most rows the search-result panel takes at the bottom
