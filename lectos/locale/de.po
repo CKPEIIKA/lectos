@@ -871,3 +871,12 @@ msgstr "Tinte der Folie löschen"
 
 msgid "quick drawing layout (s)"
 msgstr "Schnellzeichen-Layout (s)"
+
+msgid "link not opened: {error}"
+msgstr "Link nicht geöffnet: {error}"
+
+msgid "opened {uri}"
+msgstr "{uri} geöffnet"
+
+msgid "the PDF has notes pages: Zathura would show them to the audience, use the gtk projector"
+msgstr "Das PDF hat Notizseiten: Zathura würde sie dem Publikum zeigen, nutze den gtk-Projektor"

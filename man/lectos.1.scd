@@ -38,6 +38,11 @@ driven over D-Bus) or *none*. *lectos-tui* starts the terminal console with Zath
 	GTK console layout: for a notebook, for a big screen (adds a filmstrip of previous and upcoming slides), chosen by
 	window width, or the quick drawing layout (large slide, drawing toolbar).
 
+*--notes-pages* _auto_|_none_|_left_|_right_
+	Where Beamer's second-screen notes (*\\setbeameroption{show notes on second screen}*) sit on each PDF page. With *auto* a
+	page much wider than a slide is taken as slide plus notes, notes on the right. The audience sees only the slide half
+	with the GTK projector.
+
 *--lang* _auto_|_en_|_ru_|_de_
 	Interface language. Default: from *LC_ALL*, *LANGUAGE*, *LANG*.
 

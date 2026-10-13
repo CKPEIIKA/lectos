@@ -7,6 +7,7 @@ from lectos.control import commands
 from lectos.draw.stage import Stage
 from lectos.model.deck import Deck
 from lectos.model.ink import Ink
+from lectos.model.links import Link
 from lectos.notes.markdown import MarkdownNotes, NotesError
 from lectos.projectors.projection import COMMAND_CAPS, GTK_CAPS, NullProjector
 from lectos.term.pdftools import PdfToolError
@@ -63,6 +64,9 @@ def make(tmp_path: Path, caps: frozenset[str] = frozenset(), *, with_ink: bool =
 class _Doc:
     def page_size(self, page: int) -> tuple[float, float]:
         return 400.0, 300.0
+
+    def links(self, page: int) -> list[Link]:
+        return []
 
     def paint(self, cr, page: int) -> None: ...
 

@@ -5,6 +5,7 @@ from lectos.draw import render
 from lectos.draw.stage import Stage
 from lectos.model.deck import Deck
 from lectos.model.ink import COLORS, Ink, Stroke, slide_layer
+from lectos.model.links import Link
 from lectos.model.style import BOARD_STYLES, LaserStyle
 
 PAGE_W, PAGE_H = 400.0, 300.0
@@ -13,6 +14,9 @@ PAGE_W, PAGE_H = 400.0, 300.0
 class FakeDoc:
     def page_size(self, page: int) -> tuple[float, float]:
         return PAGE_W, PAGE_H
+
+    def links(self, page: int) -> list[Link]:
+        return []
 
     def paint(self, cr: cairo.Context, page: int) -> None:
         cr.set_source_rgb(1, 1, 1)

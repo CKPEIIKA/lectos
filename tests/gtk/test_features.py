@@ -1,5 +1,6 @@
 import shutil
 
+import cairo
 import pytest
 from conftest import EXAMPLES
 from gi.repository import Gtk
@@ -280,3 +281,97 @@ def test_restoring_a_drawing_layout_state_works_without_the_notes_view(rig, pump
     c.restore({"layout": "draw", "notes_scroll": 40.0})
     pump(0.05)
     assert c.layout_active == layouts.DRAW
+
+
+# ---- links, notes pages, annotations ----
+SPLIT_PAGE = {"size": (800, 300), "text": "SLIDE", "text_right": "NOTES"}
+
+
+def test_following_and_opening_links_from_the_console(rig, monkeypatch) -> None:
+    c = rig.console
+    seen = []
+    monkeypatch.setattr(console_module, "launch", lambda uri: seen.append(uri) or "")
+    c._open_uri("https://example.org")
+    assert c.last_message == "opened https://example.org"
+    monkeypatch.setattr(console_module, "launch", lambda uri: "no browser")
+    c._open_uri("https://example.org")
+    assert c.last_message == "link not opened: no browser"
+    assert seen == ["https://example.org"]
+
+
+def test_the_projector_reports_links_it_cannot_open_on_stderr(rig, application, monkeypatch, capsys) -> None:
+    from lectos import config
+    from lectos.gtk import projector as projector_module
+    from lectos.gtk.projector import ProjectorWindow
+
+    window = ProjectorWindow(application, rig.core.stage, rig.core.ink, None, config.Blackout())
+    monkeypatch.setattr(projector_module, "launch", lambda uri: "no browser")
+    window._open_uri("https://example.org")
+    assert "link not opened: no browser" in capsys.readouterr().err
+    monkeypatch.setattr(projector_module, "launch", lambda uri: "")
+    window._open_uri("https://example.org")
+    assert capsys.readouterr().err == ""
+    window.destroy()
+
+
+def test_notes_pages_are_shown_above_the_text_notes(build_rig, pdf_maker, tmp_path) -> None:
+    pdf = pdf_maker([SPLIT_PAGE, SPLIT_PAGE])
+    notes = tmp_path / "n.md"
+    notes.write_text("<!-- slide: 1 -->\nsome text\n")
+    c = build_rig(pdf=pdf, notes=notes).console
+    holder = c.main_holder.get_first_child()
+    pane = holder.get_end_child()
+    assert isinstance(pane, Gtk.Box)
+    assert isinstance(pane.get_first_child(), Gtk.AspectFrame)
+    assert c.scroller is not None
+    area = pane.get_first_child().get_child()
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 200, 100)
+    c._draw_notes_page(cairo.Context(surface), 200, 100)
+    surface.flush()
+    assert any(bytes(surface.get_data()))
+    c.deck.view = 9  # out of range: nothing is drawn, nothing breaks
+    c._draw_notes_page(cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 20, 20)), 20, 20)
+    assert area in c._plain_areas
+
+
+def test_notes_pages_alone_need_no_text_view(build_rig, pdf_maker) -> None:
+    c = build_rig(pdf=pdf_maker([SPLIT_PAGE]), notes=False).console
+    assert c.scroller is None
+    assert isinstance(c.main_holder.get_first_child().get_end_child(), Gtk.AspectFrame)
+
+
+def test_notes_pages_follow_the_options(build_rig, pdf_maker) -> None:
+    from lectos import config
+
+    c = build_rig(pdf=pdf_maker([SPLIT_PAGE]), notes=False, options=config.Options(notes_pages="none")).console
+    assert c.doc.notes_side == ""
+    assert c.doc.page_size(0) == (800, 300)
+
+
+def test_the_launcher_uses_pdf_annotations_as_notes_and_warns_about_zathura(
+    application, pdf_maker, monkeypatch
+) -> None:
+    from lectos import config
+    from lectos.gtk import app as app_module
+    from lectos.gtk.pdfdoc import AnnotationNotes
+    from lectos.projectors.projection import NullProjector
+
+    annotated = pdf_maker([{"notes": [((10, 10, 30, 30), "say this")]}], name="a.pdf")
+
+    def current(launcher):
+        assert launcher.session is not None
+        return launcher.session
+
+    launcher = app_module.Launcher(application, config.Options(), projector="none", windowed=True, monitor=None)
+    launcher.begin(annotated, None)
+    assert isinstance(current(launcher).console.notes, AnnotationNotes)
+    current(launcher).finish()
+    plain = pdf_maker([{}], name="p.pdf")
+    launcher.begin(plain, None)
+    assert current(launcher).console.notes is None
+    current(launcher).finish()
+    monkeypatch.setattr(app_module, "make_projector", lambda *a, **k: NullProjector())
+    zathura = app_module.Launcher(application, config.Options(), projector="zathura", windowed=True, monitor=None)
+    zathura.begin(pdf_maker([SPLIT_PAGE], name="s.pdf"), None)
+    assert "notes pages" in current(zathura).console.last_message
+    current(zathura).finish()

@@ -11,6 +11,7 @@ import cairo
 from lectos.draw import render
 from lectos.model.deck import Deck
 from lectos.model.ink import BOARD_LAYER, Ink, slide_layer
+from lectos.model.links import Link
 from lectos.model.style import LaserStyle
 
 PNG_MIN_WIDTH = 1920  # pixels: an exported drawing layer is at least this wide
@@ -24,6 +25,9 @@ class Slides(Protocol):
 
     def paint(self, cr: cairo.Context, page: int) -> None:
         """Paint the page in its own coordinate space."""
+
+    def links(self, page: int) -> list[Link]:
+        """Clickable areas of the page, in page points with the origin top-left."""
 
     def draw(self, cr: cairo.Context, page: int, width: int, height: int) -> tuple[float, float, float]:
         """Paint the page fitted to the area and return the fit used."""

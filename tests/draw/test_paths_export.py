@@ -7,6 +7,7 @@ from lectos.draw import render
 from lectos.draw.stage import Stage
 from lectos.model.deck import Deck
 from lectos.model.ink import Ink, slide_layer
+from lectos.model.links import Link
 from lectos.paths import unique
 
 
@@ -22,6 +23,9 @@ def test_unique_never_returns_an_existing_file(tmp_path: Path) -> None:
 class FakeDoc:
     def page_size(self, page: int) -> tuple[float, float]:
         return 200.0, 100.0
+
+    def links(self, page: int) -> list[Link]:
+        return []
 
     def paint(self, cr: cairo.Context, page: int) -> None:
         cr.set_source_rgb(1, 1, 1)

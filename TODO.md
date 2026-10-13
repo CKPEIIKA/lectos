@@ -17,6 +17,8 @@ Unfinished work only. Keep tasks concrete, prioritized, and verifiable. Move com
 
 ## Unprioritized
 
+- [ ] Notes on separate PDF pages (`\setbeameroption{show notes}`) and a separate notes PDF; embedded video/media.
+
 - [ ] Timing statistics: time spent on each slide, broken down by sections.
 
 ## Follow-ups

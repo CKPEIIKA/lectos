@@ -19,9 +19,10 @@ from lectos import state
 from lectos.config import Options
 from lectos.draw.stage import Stage
 from lectos.gtk.console import ConsoleWindow
-from lectos.gtk.pdfdoc import PdfDoc
+from lectos.gtk.pdfdoc import AnnotationNotes, PdfDoc
 from lectos.gtk.projector import ProjectorWindow, WindowProjector
 from lectos.gtk.widgets.start import StartWindow
+from lectos.i18n import tr
 from lectos.model.deck import Deck
 from lectos.model.ink import Ink
 from lectos.model.style import LaserStyle
@@ -52,7 +53,7 @@ def build_core(pdf: Path, caps: frozenset[str], options: Options) -> Core:
 
     Options set the pen and laser defaults; features the projector lacks are switched off.
     """
-    doc = PdfDoc(pdf)
+    doc = PdfDoc(pdf, options.notes_pages)
     deck = Deck(doc.pages)
     deck.board_style = options.drawing.board
     saved = state.load(pdf)
@@ -180,8 +181,12 @@ class Launcher:
             self.failure.append(str(exc))
             self.app.quit()
             return
+        notes = notes or (AnnotationNotes(core.doc) if core.doc.annotations() else None)  # notes inside the PDF
         self.session = _open_console(self.app, pdf, core, proj, notes=notes, options=self.options)
-        self.session.console.opener = self.show_start
+        console = self.session.console
+        console.opener = self.show_start
+        if core.doc.notes_side and self.kind == "zathura":
+            console.say(tr("the PDF has notes pages: Zathura would show them to the audience, use the gtk projector"))
 
     def show_start(self) -> None:
         """The window that chooses slides and notes."""

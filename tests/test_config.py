@@ -181,3 +181,10 @@ def test_hidden_panels_are_listed_validated_and_deduplicated(tmp_path: Path) -> 
     ):
         with pytest.raises(ConfigError, match=message):
             config.load(write(tmp_path, text))
+
+
+def test_notes_pages_must_be_a_known_placement(tmp_path: Path) -> None:
+    assert Options().notes_pages == "auto"
+    assert config.load(write(tmp_path, '[console]\nnotes_pages = "left"\n')).notes_pages == "left"
+    with pytest.raises(ConfigError, match="notes_pages must be one of"):
+        config.load(write(tmp_path, '[console]\nnotes_pages = "top"\n'))

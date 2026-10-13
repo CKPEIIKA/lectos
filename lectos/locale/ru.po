@@ -871,3 +871,12 @@ msgstr "стереть рисунки слайда"
 
 msgid "quick drawing layout (s)"
 msgstr "быстрое рисование (s)"
+
+msgid "link not opened: {error}"
+msgstr "ссылка не открыта: {error}"
+
+msgid "opened {uri}"
+msgstr "открыто: {uri}"
+
+msgid "the PDF has notes pages: Zathura would show them to the audience, use the gtk projector"
+msgstr "в PDF есть страницы заметок: Zathura покажет их аудитории, используйте gtk-проектор"

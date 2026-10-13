@@ -25,6 +25,7 @@ from lectos.gtk.inkinput import InkInput
 from lectos.gtk.pdfdoc import PdfDoc
 from lectos.gtk.widgets import css
 from lectos.gtk.widgets.drawbar import DrawBar
+from lectos.gtk.widgets.links import LinkInput, launch
 from lectos.gtk.widgets.notesedit import NotesEditor
 from lectos.gtk.widgets.settings import SettingsWindow
 from lectos.i18n import noop, tr
@@ -554,11 +555,18 @@ class ConsoleWindow(Adw.ApplicationWindow):
         area = self._page_area(lambda: self.deck.view)
         if "ink" in self.projector.caps:  # a plain PDF viewer as projector cannot show ink
             InkInput(area, self.stage, self.ink, lambda: self.deck.view)
+        LinkInput(area, self.stage, self.ink, lambda: self.deck.view, on_page=self.deck.goto, on_uri=self._open_uri)
         motion = Gtk.EventControllerMotion()
         motion.connect("motion", lambda _c, x, y: self._laser_motion(area, x, y))
         motion.connect("leave", lambda _c: self.deck.set_laser(None))
         area.add_controller(motion)
         return area
+
+    def _open_uri(self, uri: str) -> None:
+        error = launch(uri)
+        self._set_status(
+            tr("link not opened: {error}").format(error=error) if error else tr("opened {uri}").format(uri=uri)
+        )
 
     def _laser_motion(self, area: Gtk.DrawingArea, x: float, y: float) -> None:
         if self.deck.laser_on:
@@ -570,7 +578,28 @@ class ConsoleWindow(Adw.ApplicationWindow):
         column.append(self._page_area(get_page, height, staged=staged))
         return column
 
-    def _notes_widget(self) -> Gtk.ScrolledWindow:
+    def _notes_widget(self) -> Gtk.Widget:
+        """The notes: the notes half of the PDF pages (if it has them) above the text notes."""
+        if not self.doc.notes_side:
+            return self._notes_text()
+        pw, ph = self.doc.page_size(0)
+        area = Gtk.DrawingArea(hexpand=True, vexpand=True)
+        area.set_draw_func(lambda _a, cr, w, h: self._draw_notes_page(cr, w, h))
+        self._plain_areas.append(area)
+        pages = Gtk.AspectFrame(ratio=pw / ph, obey_child=False, xalign=0.5, yalign=0.0, child=area)
+        if self.notes is None:
+            self.view = self.scroller = None
+            return pages
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        box.append(pages)
+        box.append(self._notes_text())
+        return box
+
+    def _draw_notes_page(self, cr, width: int, height: int) -> None:
+        if 0 <= self.deck.view < self.doc.pages:
+            self.doc.draw_notes(cr, self.deck.view, width, height)
+
+    def _notes_text(self) -> Gtk.ScrolledWindow:
         """A scrolling view of the shared notes buffer; each layout gets its own view."""
         view = Gtk.TextView(
             buffer=self.buffer, editable=False, cursor_visible=False, wrap_mode=Gtk.WrapMode.WORD_CHAR,
@@ -601,7 +630,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             row.append(self._captioned(tr("next"), lambda: self.deck.view + 1, height, staged=False))
         return row if row.get_first_child() is not None else None
 
-    def _notes_or_none(self) -> Gtk.ScrolledWindow | None:
+    def _notes_or_none(self) -> Gtk.Widget | None:
         if "notes" in self.hidden:
             self.view = self.scroller = None
             return None

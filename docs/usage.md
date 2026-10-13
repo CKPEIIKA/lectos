@@ -104,3 +104,9 @@ See `examples/options.toml` and `examples/standby.svg`. Status: tested with unit
 `sketch` (key `s`, header button) switches to the **drawing layout**: the slide as large as the window allows, with a toolbar for colour, width, highlighter, eraser, undo, redo, clear, chalkboard and laser. The mouse draws while it is on (the pointer becomes a crosshair, a cell cursor for the eraser) and goes back to its earlier setting when you leave. `layout draw` does the same.
 
 `export-ink [FILE]` writes the current slide's (or the board's) drawing layer alone, on a transparent background, to a new PNG. Ink itself is saved automatically with the session.
+
+## Links, annotations and Beamer notes pages
+
+- **Links:** a click on a link in the large preview (console) or in the projector window follows it: links to pages go there (the projector follows), web and mail links open in the desktop's default program. Other link targets (files, programs) are never opened. Links are off while the mouse draws, on the chalkboard, and for pen input. The pointer becomes a hand over a link.
+- **Annotations:** the PDF is drawn with its annotations. When no notes file is given and the PDF has text annotations (note icons, free text), their contents are shown as the notes of that slide (read only).
+- **Notes pages:** a Beamer deck built with `\setbeameroption{show notes on second screen=right}` has the slide and its notes side by side on one wide page. lectos detects such pages (much wider than a slide), shows only the slide half to the audience and in previews and search, and shows the notes half in the notes pane, above any text notes. Override with `--notes-pages none|left|right` or `[console] notes_pages`. Use the gtk projector with these decks: Zathura would show the notes pages to the audience (lectos warns). The terminal console shows whole pages in its previews. Decks with the notes on separate pages (`show notes`) are not split.

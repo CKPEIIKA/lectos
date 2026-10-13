@@ -7,6 +7,7 @@ WIDE = "wide"
 DRAW = "draw"  # the slide as large as possible with a drawing toolbar, for quick sketching
 AUTO = "auto"
 MODES = (AUTO, COMPACT, WIDE, DRAW)
+NOTES_PAGES = ("auto", "none", "left", "right")  # where Beamer's second-screen notes are: detect, nowhere, left, right
 PANELS = ("notes", "audience", "next", "strip", "status")  # parts of the console that can be hidden
 WIDE_ENTER_PX = 1500  # auto switches to wide at this window width ...
 WIDE_LEAVE_PX = 1380  # ... and back to compact below this one, so resizing does not flicker

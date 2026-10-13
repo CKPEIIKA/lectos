@@ -60,6 +60,10 @@ uv sync --group dev
 
 Layout of the repository and the rules for contributors are in [`AGENTS.md`](AGENTS.md); open work is in `TODO.md`, finished work in `DONE.md`, and `lectos/` is split into subpackages (`model`, `control`, `notes`, `draw`, `projectors`, `gtk`, `term`).
 
+## Credits
+
+lectos was inspired by [pympress](https://github.com/Cimbali/pympress), the dual-screen PDF presenter by Cimbali and contributors: the presenter console with current and next slide, notes and timer, clickable PDF links and annotations, and Beamer notes pages all come from ideas seen there. lectos shares no code with it.
+
 ## License
 
 GPL-3.0-only, see [LICENSE](LICENSE). Nothing from other projects is bundled; lectos uses GTK 4, libadwaita, PyGObject, pycairo, Poppler, Zathura, chafa, LaTeX and dvipng as separate programs or libraries.

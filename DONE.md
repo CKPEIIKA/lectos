@@ -2,6 +2,13 @@
 
 Completed work only. Record meaningful outcomes and validation evidence, newest first.
 
+## 2026-10-13: PDF links, annotations, Beamer notes pages
+
+- Clickable PDF links in the console preview and the projector window: page links go there (the projector follows), http/https/mailto open in the desktop's browser, anything else is never opened; inactive while drawing, on the board and for pen input.
+- Text annotations of the PDF become read-only notes when no notes file is given.
+- Beamer `show notes on second screen` decks (slide and notes side by side) are detected (`--notes-pages auto|none|left|right`, `[console] notes_pages`): the audience, previews, search and links see the slide half, the notes half is shown in the notes pane. Zathura as projector triggers a warning.
+- Tests build small PDFs by hand (no LaTeX needed); 473 tests, 100% coverage. README credits pympress as the inspiration.
+
 ## 2026-10-13: start window, notes editing, settings, drawing layout; subpackages; 100% coverage
 
 - `lectos` without arguments opens a start window (choose slides, notes, or a folder); a PDF or a folder on the command line works too, and notes next to the slides are found automatically. `Open other slides…` / `:open` switches decks without leaving the application (state of the old deck is saved first).

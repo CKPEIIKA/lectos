@@ -93,6 +93,7 @@ class Options:
     layout: str = layouts.AUTO
     previous: int = layouts.DEFAULT_PREVIOUS
     upcoming: int = layouts.DEFAULT_UPCOMING
+    notes_pages: str = "auto"  # where Beamer's second-screen notes sit on a page: auto none left right
     hidden: tuple[str, ...] = ()  # console panels hidden at startup: notes audience next strip status
     language: str = "auto"  # "auto" reads the environment, or "en" / "ru"
     console: str | None = None  # "gtk" or "tui"; None means the entry point decides
@@ -152,6 +153,13 @@ def _count(section: dict[str, object], key: str, default: int, maximum: int) -> 
     value = _typed(section, key, int, default, "[console] ")
     if not 0 <= value <= maximum:
         raise ConfigError(f"[console] {key} must be 0..{maximum}")
+    return value
+
+
+def _notes_pages(section: dict[str, object]) -> str:
+    value = _typed(section, "notes_pages", str, Options.notes_pages, "[console] ")
+    if value not in layouts.NOTES_PAGES:
+        raise ConfigError(f"[console] notes_pages must be one of {', '.join(layouts.NOTES_PAGES)}")
     return value
 
 
@@ -265,7 +273,7 @@ def parse(data: dict[str, object], base: Path) -> Options:
     if unknown:
         raise ConfigError(f"unknown section [{unknown[0]}]")
     black = _section(data, "blackout", {"image", "text", "background", "text_color"})
-    console = _section(data, "console", {"vim", "target_min", "layout", "previous", "upcoming", "hide"})
+    console = _section(data, "console", {"vim", "target_min", "layout", "previous", "upcoming", "hide", "notes_pages"})
     head = _section(data, "header", {"start", "title", "end"})
     draw = _section(data, "drawing", {"color", "width", "highlighter_alpha", "eraser_radius", "smoothing", "board"})
     pointer = _section(data, "laser", {"color", "size", "style", "halo"})
@@ -287,6 +295,7 @@ def parse(data: dict[str, object], base: Path) -> Options:
         previous=_count(console, "previous", layouts.DEFAULT_PREVIOUS, layouts.MAX_PREVIOUS),
         upcoming=_count(console, "upcoming", layouts.DEFAULT_UPCOMING, layouts.MAX_UPCOMING),
         hidden=_hidden(console),
+        notes_pages=_notes_pages(console),
         language=_choice(ui, "language", ("auto", *i18n.LANGUAGES)) or "auto",
         console=_choice(ui, "console", CONSOLES),
         projector=_choice(ui, "projector", PROJECTORS),

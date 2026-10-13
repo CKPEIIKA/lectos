@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -11,6 +13,7 @@ from gi.repository import Gdk, Gtk
 from lectos.config import Blackout
 from lectos.draw.stage import Stage
 from lectos.gtk.inkinput import InkInput
+from lectos.gtk.widgets.links import LinkInput, launch
 from lectos.i18n import tr
 from lectos.model.ink import Ink
 from lectos.projectors.projection import GTK_CAPS
@@ -47,11 +50,18 @@ class ProjectorWindow(Gtk.ApplicationWindow):
             overlay.add_overlay(self.standby)
         self.set_child(overlay)
         InkInput(self.area, stage, ink, lambda: self.deck.page)
+        LinkInput(self.area, stage, ink, lambda: self.deck.page, on_page=self.deck.goto, on_uri=self._open_uri)
         keys = Gtk.EventControllerKey()
         keys.connect("key-pressed", lambda _c, keyval, *_: self._on_key(keyval))
         self.add_controller(keys)
         self.deck.subscribe(self._on_deck)
         ink.subscribe(self.area.queue_draw)
+
+    @staticmethod
+    def _open_uri(uri: str) -> None:
+        error = launch(uri)
+        if error:
+            print(f"lectos: link not opened: {error}", file=sys.stderr)
 
     def _build_standby(self, blackout: Blackout) -> Gtk.Box | None:
         """The configured blackout screen, shown over the slide; None means plain black."""

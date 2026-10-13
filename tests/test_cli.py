@@ -300,3 +300,12 @@ def test_the_terminal_console_cannot_start_without_slides(
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "none"))
     assert cli.main_tui([]) == 2
     assert "needs the slides" in capsys.readouterr().err
+
+
+def test_the_notes_pages_flag_reaches_the_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    seen: list[Options] = []
+    monkeypatch.setattr(cli, "_dispatch", lambda console, projector, args, options: seen.append(options) or 0)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "none"))
+    (tmp_path / "s.pdf").write_bytes(b"%PDF-")
+    assert cli.main([str(tmp_path / "s.pdf"), "--notes-pages", "left"]) == 0
+    assert seen[0].notes_pages == "left"

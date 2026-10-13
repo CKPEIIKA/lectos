@@ -11,6 +11,7 @@ from pathlib import Path
 
 from lectos import i18n
 from lectos.config import ConfigError, Options, load
+from lectos.model import layout as layouts
 from lectos.paths import discover, notes_for
 
 CONSOLE_CHOICES = ("gtk", "tui")
@@ -53,6 +54,11 @@ def build_parser(prog: str) -> argparse.ArgumentParser:
     parser.add_argument(
         "--lang", choices=("auto", "en", "ru", "de"), help="Interface language (default: from the environment)."
     )
+    parser.add_argument(
+        "--notes-pages",
+        choices=layouts.NOTES_PAGES,
+        help="Where Beamer's second-screen notes sit on each PDF page (default: auto, from the page shape).",
+    )
     parser.add_argument("--windowed", action="store_true", help="Keep the GTK projector window windowed.")
     parser.add_argument("--monitor", type=int, help="GTK projector monitor index (default: last when several).")
     parser.add_argument("--fullscreen", action="store_true", help="Start the projector fullscreen.")
@@ -91,6 +97,8 @@ def main(argv: Sequence[str] | None = None, *, default_console: str = "gtk", def
         options = replace(options, vim=False)
     if args.layout:
         options = replace(options, layout=args.layout)
+    if args.notes_pages:
+        options = replace(options, notes_pages=args.notes_pages)
     i18n.init(args.lang or options.language)
     console = args.console or options.console or default_console
     projector = args.projector or options.projector or default_projector
