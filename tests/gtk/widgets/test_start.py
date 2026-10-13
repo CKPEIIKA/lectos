@@ -120,3 +120,10 @@ def test_dialogs_filter_by_file_type(started) -> None:
     window, _calls = started
     assert isinstance(window._dialog("t", ("*.pdf", "*.md")), Gtk.FileDialog)
     assert window._dialog("t").get_filters() is None
+
+
+def test_a_pdf_picked_in_the_folder_dialog_is_taken_as_the_slides(started, deck) -> None:
+    window, _calls = started
+    assert window.set_folder(deck / "slides.pdf") is True
+    assert (window.slides, window.notes) == (deck / "slides.pdf", deck / "slides.tex")
+    assert window.set_folder(deck / "notes.md") is False  # another kind of file is no folder either

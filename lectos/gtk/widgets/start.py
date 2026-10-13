@@ -81,7 +81,14 @@ class StartWindow(Adw.ApplicationWindow):
             self.notes_row.set_subtitle(str(notes) + (tr("  (found next to the slides)") if found else ""))
 
     def set_folder(self, folder: Path) -> bool:
-        """Take the slides and notes found in a folder; False when it holds no PDF."""
+        """Take the slides and notes found in a folder; False when it holds no PDF.
+
+        Some file dialogs hand back a PDF chosen in the folder dialog: that is taken as the slides.
+        """
+        if folder.is_file() and folder.suffix.lower() == ".pdf":
+            self.notes = None
+            self.set_slides(folder)
+            return True
         found = discover(folder)
         if found is None:
             self.slides_row.set_subtitle(tr("no PDF in {folder}").format(folder=folder))
