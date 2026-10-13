@@ -10,6 +10,19 @@ A presenter tool for Linux. You give it PDF slides and, optionally, lecture note
 
 You need Python 3.13+ and [uv](https://docs.astral.sh/uv/), plus system packages that Python cannot install: GTK 4, libadwaita 1.4+, PyGObject and the Poppler GObject typelib. Optional: `latex` and `dvipng` (typeset math in notes), `zathura` (alternative projector), `pdftoppm`, `pdftotext` and `chafa` (terminal console).
 
+Straight from GitHub (puts `lectos` and `lectos-tui` on your PATH):
+
+```bash
+pipx install --python python3.13 --system-site-packages "lectos @ git+https://github.com/CKPEIIKA/lectos.git"
+# or with plain pip:
+python3.13 -m venv --system-site-packages ~/.venvs/lectos
+~/.venvs/lectos/bin/pip install git+https://github.com/CKPEIIKA/lectos.git
+```
+
+`--system-site-packages` matters: PyGObject, GTK and Poppler come from the system and are not on PyPI as ready packages. Upgrade with `pipx upgrade lectos` (or `pip install -U` again).
+
+From a clone, for development:
+
 ```bash
 git clone https://github.com/CKPEIIKA/lectos.git
 cd lectos
@@ -18,6 +31,8 @@ uv sync --locked
 ```
 
 ## Run
+
+With the clone, prefix the commands with `uv run`; after `pipx install` they are plain commands.
 
 ```bash
 uv run lectos                                  # opens a window: choose slides, notes or a folder
