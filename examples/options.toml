@@ -1,0 +1,43 @@
+# Sample options. Use with: lectos --config examples/options.toml slides.pdf notes.md
+# Default location: $XDG_CONFIG_HOME/lectos/options.toml (usually ~/.config/lectos/options.toml)
+
+[blackout]
+# Shown on the projector instead of plain black. Both keys are optional.
+image = "standby.svg"          # path relative to this file, absolute, or ~/...
+text = "Please stand by…"
+background = "#101820"         # #rrggbb
+text_color = "#f2f2f2"
+
+[console]
+vim = true                     # vim keys on at startup (--no-vim overrides)
+target_min = 90                # default lecture length: minutes (90) or a length like "1h30", "1:30", "45m" (at most 24 h)
+layout = "auto"                # "compact" (notebook), "wide" (big screen) or "auto" by window width
+previous = 3                   # filmstrip (wide layout): slides before the current one, 0..8
+upcoming = 8                   # filmstrip (wide layout): slides after the current one, 0..16
+
+[drawing]
+color = "yellow"               # pen colour: red yellow green blue white black, or #rrggbb
+width = 4                      # pen width 1..40
+highlighter_alpha = 0.35       # highlighter opacity 0.1..0.9 (the highlighter is 3x as wide as the pen)
+eraser_radius = 14             # 4..80
+smoothing = 0                  # 0 (off) .. 5: smooth finished strokes
+board = "chalk"                # chalkboard background: chalk black white ruled grid
+
+[laser]
+color = "red"                  # name or #rrggbb
+size = 9                       # radius in pixels, 3..30
+style = "dot"                  # dot ring cross
+halo = true                    # soft glow around it
+
+[header]
+# What the console header bar shows, left to right. Known items:
+#   prev next goto overview search freeze blackout board laser draw eraser undo redo
+#   projector fullscreen layout menu
+start = ["prev", "next", "goto", "overview", "search"]
+title = "timer"                # "timer", "slide" or "none"
+end = ["layout", "freeze", "blackout", "menu"]
+
+[ui]
+# language = "auto"     # "auto" (from LANG), "en" or "ru"
+# console = "gtk"        # "gtk" or "tui" (terminal)
+# projector = "gtk"      # "gtk" (our window) or "zathura"

@@ -1,0 +1,104 @@
+% Sample deck about lectos itself. Build: ./build.sh   Present: lectos slides.pdf slides.tex
+% The \note{...} commands are the lecture notes; lectos reads them straight from this file.
+\documentclass[aspectratio=169]{beamer}
+\usetheme{default}
+\usecolortheme{seahorse}
+\setbeamertemplate{navigation symbols}{}
+\usepackage{amsmath,amssymb}
+
+\title{lectos}
+\subtitle{A presenter console for PDF slides}
+\author{Sample deck}
+\date{}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+  \note{Welcome. This deck is about the tool that is presenting it.
+  The slides are a plain PDF; the notes you are reading on the laptop are the
+  \texttt{\textbackslash note} commands in the Beamer source.}
+\end{frame}
+
+\begin{frame}{What lectos is}
+  \begin{itemize}
+    \item Projector window for the audience
+    \item Presenter console for you
+    \item Slides: any tool that makes a PDF
+    \item Notes: Markdown or Beamer \texttt{\textbackslash note}
+  \end{itemize}
+  \note{Two windows, one process, all GTK4.
+  \begin{itemize}
+    \item The projector shows only the slide.
+    \item The console shows the current slide, what the audience sees, and the next slide.
+  \end{itemize}
+  It does \textbf{not} compile anything: build your PDF the way you always do.}
+\end{frame}
+
+\begin{frame}{Notes with mathematics}
+  Conservation law:
+  \[
+    \frac{\partial \mathbf U}{\partial t} + \nabla\cdot\mathbf F(\mathbf U) = \mathbf S(\mathbf U)
+  \]
+  \note{Equations in the notes are typeset with LaTeX and shown as images, for example the
+  governing equation $\partial_t U + \nabla\cdot F(U) = S(U)$ on this slide, or the Roe flux
+  \[
+    \hat F = \frac{F_L+F_R}{2} - \frac12 \lvert\tilde A\rvert\,(U_R-U_L).
+  \]
+  If a formula does not compile it stays visible as raw TeX.}
+\end{frame}
+
+\begin{frame}{Moving around}
+  \begin{itemize}
+    \item \texttt{l} / \texttt{h}: next / previous (\texttt{5l})
+    \item \texttt{gg}, \texttt{G}, \texttt{12G}, \texttt{:12}: go to slide
+    \item \texttt{o}: overview, \texttt{/}: search
+    \item \texttt{z}: freeze, \texttt{b}: blackout
+    \item \texttt{f} / \texttt{F}: fullscreen
+  \end{itemize}
+  \note{Vim keys are optional; arrows and Space always work.
+  Try \texttt{o} for the thumbnail overview, then click a slide.
+  Search \texttt{/} looks through slide text and notes: try ``Roe''.}
+\end{frame}
+
+\begin{frame}{Freeze and blackout}
+  \begin{itemize}
+    \item \textbf{Freeze}: browse privately, the audience keeps the current slide
+    \item \textbf{Blackout}: projector goes black
+    \item Unfreezing catches the projector up
+  \end{itemize}
+  \note{Use freeze to look ahead or jump back to check something without the audience
+  seeing it. When you unfreeze, the projector jumps to the slide you are viewing.
+  Search hits in the notes preview their slide but never move the projector.}
+\end{frame}
+
+\begin{frame}{Timer and recovery}
+  \begin{itemize}
+    \item Elapsed, time left, estimated time at current pace
+    \item Page, timer, notes position and layout are saved
+    \item Closed the window by accident? Start again and carry on
+  \end{itemize}
+  \note{The pace estimate is elapsed time divided by slides shown, times slides remaining.
+  State lives in one small JSON file under \texttt{\textasciitilde/.local/state/lectos},
+  written atomically every couple of seconds.}
+\end{frame}
+
+\begin{frame}{Draw on the slide}
+  Mouse or pen on the projector window.
+  \begin{itemize}
+    \item \texttt{c} clears ink on the current slide
+    \item Pen pressure changes the stroke width
+  \end{itemize}
+  \note{Ink is per slide and only kept in memory for now. A laser pointer, persistent ink and a
+  chalkboard are on the roadmap.}
+\end{frame}
+
+\begin{frame}{Try it}
+  \texttt{lectos slides.pdf slides.tex}\par\medskip
+  \texttt{lectos slides.pdf notes.md}
+  \note{The same deck works with Markdown notes: \texttt{notes.md} uses
+  \texttt{<!-- slide: N -->} markers to tie sections to slides.
+  Thank you.}
+\end{frame}
+
+\end{document}

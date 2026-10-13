@@ -1,0 +1,33 @@
+# BEGIN COMMON PYTHON WORKSPACE IGNORES
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.uv-cache/
+.uv_cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ty/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+build/
+dist/
+*.egg-info/
+quality.txt
+reports/quality_checks.txt
+reports/coverage.json
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+# END COMMON PYTHON WORKSPACE IGNORES
+
+# local notes
+NOTES.local.md

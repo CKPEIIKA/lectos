@@ -1,0 +1,711 @@
+# German translation of lectos.
+# Plain gettext .po: msgid is the English text shown by tr(); keep {placeholders} unchanged.
+msgid ""
+msgstr ""
+"Project-Id-Version: lectos\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Navigation"
+msgstr "Navigation"
+
+msgid "Notes"
+msgstr "Notizen"
+
+msgid "Timer"
+msgstr "Timer"
+
+msgid "Projector"
+msgstr "Projektor"
+
+msgid "Drawing"
+msgstr "Zeichnen"
+
+msgid "Laser"
+msgstr "Laser"
+
+msgid "View"
+msgstr "Ansicht"
+
+msgid "General"
+msgstr "Allgemein"
+
+msgid "Next slide, or N slides forward."
+msgstr "Nächste Folie oder N Folien vorwärts."
+
+msgid "Previous slide, or N slides back."
+msgstr "Vorherige Folie oder N Folien zurück."
+
+msgid "Go to slide N. A bare number does the same: :12"
+msgstr "Zu Folie N gehen. Eine bloße Zahl tut dasselbe: :12"
+
+msgid "Go to the first slide."
+msgstr "Zur ersten Folie gehen."
+
+msgid "Go to the last slide. :$ does the same."
+msgstr "Zur letzten Folie gehen. :$ tut dasselbe."
+
+msgid "List or grid of all slides; pick one to go there."
+msgstr "Liste oder Raster aller Folien; eine wählen, um dorthin zu springen."
+
+msgid "Leave the overview, search or help and return to the main view."
+msgstr "Übersicht, Suche oder Hilfe schließen und zu den Folien zurückkehren."
+
+msgid "Search slide text and notes. /TEXT does the same."
+msgstr "Folientext und Notizen durchsuchen. /TEXT tut dasselbe."
+
+msgid "Next search hit (key n)."
+msgstr "Nächster Treffer (Taste n)."
+
+msgid "Previous search hit (key N)."
+msgstr "Vorheriger Treffer (Taste N)."
+
+msgid "Whether a note hit also previews its slide (never moves the projector)."
+msgstr "Ob ein Notiztreffer auch seine Folie zeigt (der Projektor wird nie bewegt)."
+
+msgid "Scroll the notes down."
+msgstr "Notizen nach unten scrollen."
+
+msgid "Scroll the notes up."
+msgstr "Notizen nach oben scrollen."
+
+msgid "Start or pause the timer."
+msgstr "Timer starten oder anhalten."
+
+msgid "Stop the timer and set it to zero."
+msgstr "Timer anhalten und auf null setzen."
+
+msgid "Planned lecture length, e.g. 90, 1h30, 1:30 or 45m; drives the time left."
+msgstr "Geplante Vortragsdauer, z. B. 90, 1h30, 1:30 oder 45m; daraus ergibt sich die Restzeit."
+
+msgid "Hold the projector on its slide while you browse; unfreezing catches it up."
+msgstr "Den Projektor auf seiner Folie halten, während Sie blättern; beim Auftauen zieht er nach."
+
+msgid "Black out the projector (shows the standby screen if configured)."
+msgstr "Projektor abdunkeln (zeigt den Wartebildschirm, falls konfiguriert)."
+
+msgid "Show the chalkboard instead of the slide."
+msgstr "Die Tafel statt der Folie zeigen."
+
+msgid "Chalkboard background: chalk, black, white, ruled, grid."
+msgstr "Tafelhintergrund: chalk (Kreide), black, white, ruled (liniert), grid (kariert)."
+
+msgid "Fullscreen for the console window (GTK) or the projector (terminal)."
+msgstr "Vollbild für das Konsolenfenster (GTK) oder den Projektor (Terminal)."
+
+msgid "Fullscreen for the projector window."
+msgstr "Vollbild für das Projektorfenster."
+
+msgid "Let the mouse draw (a pen always draws)."
+msgstr "Mit der Maus zeichnen (ein Stift zeichnet immer)."
+
+msgid "Erase whole strokes you touch instead of drawing."
+msgstr "Berührte Striche ganz löschen statt zu zeichnen."
+
+msgid "Wide translucent strokes instead of pen strokes."
+msgstr "Breite, durchscheinende Striche statt Stiftstriche."
+
+msgid "Pen colour: red, yellow, green, blue, white, black."
+msgstr "Stiftfarbe: red, yellow, green, blue, white, black oder #rrggbb."
+
+msgid "Pen width 1..40."
+msgstr "Stiftbreite 1..40."
+
+msgid "Smooth finished strokes, 0 (off) to 5."
+msgstr "Fertige Striche glätten, 0 (aus) bis 5."
+
+msgid "Eraser radius, 4..80."
+msgstr "Radiergummi-Radius, 4..80."
+
+msgid "Highlighter opacity, 0.1..0.9."
+msgstr "Deckkraft des Textmarkers, 0.1..0.9."
+
+msgid "Undo the last ink change on this slide (or the board)."
+msgstr "Letzte Zeichenänderung auf dieser Folie (oder der Tafel) rückgängig machen."
+
+msgid "Redo it."
+msgstr "Wiederherstellen."
+
+msgid "Erase all ink on this slide (or the board); undo brings it back."
+msgstr "Alle Zeichnungen auf dieser Folie (oder der Tafel) löschen; Rückgängig bringt sie zurück."
+
+msgid "Erase ALL ink on every slide and the board; undo restores a layer at a time."
+msgstr "ALLE Zeichnungen auf allen Folien und der Tafel löschen; Rückgängig stellt Ebene für Ebene wieder her."
+
+msgid "Bring back the ink the last clear-all erased."
+msgstr "Die vom letzten clear-all gelöschten Zeichnungen zurückholen."
+
+msgid "Write the slides with your ink to a new PDF (never overwrites)."
+msgstr "Die Folien mit Ihren Zeichnungen in ein neues PDF schreiben (überschreibt nie)."
+
+msgid "Laser pointer: the dot follows the mouse over the large preview."
+msgstr "Laserpointer: der Punkt folgt der Maus über der großen Vorschau."
+
+msgid "Laser colour."
+msgstr "Laserfarbe."
+
+msgid "Laser radius in pixels, 3..30."
+msgstr "Laserradius in Pixeln, 3..30."
+
+msgid "Laser shape: dot, ring, cross."
+msgstr "Laserform: dot (Punkt), ring (Ring), cross (Kreuz)."
+
+msgid "Console layout: notebook, big screen, or by window width."
+msgstr "Konsolenlayout: Notebook, großer Bildschirm oder nach Fensterbreite."
+
+msgid "Slides shown after the current one in the wide layout's filmstrip, 0..16."
+msgstr "Folien nach der aktuellen im Filmstreifen des breiten Layouts, 0..16."
+
+msgid "Slides shown before the current one in the filmstrip, 0..8."
+msgstr "Folien vor der aktuellen im Filmstreifen, 0..8."
+
+msgid "Vim-style keys in the GTK console."
+msgstr "Tasten im Vim-Stil in der GTK-Konsole."
+
+msgid "List every command with usage and keys, or describe one."
+msgstr "Alle Befehle mit Verwendung und Tasten auflisten oder einen beschreiben."
+
+msgid "Save and quit. q does the same."
+msgstr "Speichern und beenden. q tut dasselbe."
+
+msgid "Same as quit."
+msgstr "Wie quit."
+
+msgid "{name}: no such command (:help lists them)"
+msgstr "{name}: kein solcher Befehl (Liste: :help)"
+
+msgid "key"
+msgstr "Taste"
+
+msgid "red"
+msgstr "rot"
+
+msgid "yellow"
+msgstr "gelb"
+
+msgid "green"
+msgstr "grün"
+
+msgid "blue"
+msgstr "blau"
+
+msgid "white"
+msgstr "weiß"
+
+msgid "black"
+msgstr "schwarz"
+
+msgid "chalk"
+msgstr "Kreide"
+
+msgid "ruled"
+msgstr "liniert"
+
+msgid "grid"
+msgstr "kariert"
+
+msgid "Projector frozen on slide {page}: the audience does not see what you view"
+msgstr "Projektor eingefroren auf Folie {page}: das Publikum sieht nicht, was Sie ansehen"
+
+msgid "Unfreeze"
+msgstr "Auftauen"
+
+msgid "Projector is blacked out"
+msgstr "Projektor ist abgedunkelt"
+
+msgid "Restore"
+msgstr "Einschalten"
+
+msgid "The audience sees the chalkboard"
+msgstr "Das Publikum sieht die Tafel"
+
+msgid "Back to slides"
+msgstr "Zurück zu den Folien"
+
+msgid "Red"
+msgstr "Rot"
+
+msgid "Yellow"
+msgstr "Gelb"
+
+msgid "Green"
+msgstr "Grün"
+
+msgid "Blue"
+msgstr "Blau"
+
+msgid "White"
+msgstr "Weiß"
+
+msgid "Black"
+msgstr "Schwarz"
+
+msgid "Lecture length"
+msgstr "Vortragsdauer"
+
+msgid "Pen colour"
+msgstr "Stiftfarbe"
+
+msgid "Pen width"
+msgstr "Stiftbreite"
+
+msgid "Smoothing"
+msgstr "Glättung"
+
+msgid "Eraser size"
+msgstr "Radiergummi-Größe"
+
+msgid "Chalkboard background"
+msgstr "Tafelhintergrund"
+
+msgid "Colour"
+msgstr "Farbe"
+
+msgid "Size"
+msgstr "Größe"
+
+msgid "Shape"
+msgstr "Form"
+
+msgid "Layout"
+msgstr "Layout"
+
+msgid "Upcoming slides"
+msgstr "Kommende Folien"
+
+msgid "Open the command line with : (Tab completes), or pick a row to start typing it."
+msgstr "Öffnen Sie die Befehlszeile mit : (Tab vervollständigt) oder wählen Sie eine Zeile, um den Befehl einzutippen."
+
+msgid "{n} minutes"
+msgstr "{n} Minuten"
+
+msgid "{n} px"
+msgstr "{n} px"
+
+msgid "{n}"
+msgstr "{n}"
+
+msgid "highlighter"
+msgstr "Textmarker"
+
+msgid "pen"
+msgstr "Stift"
+
+msgid "Audience"
+msgstr "Publikum"
+
+msgid "Tools"
+msgstr "Werkzeuge"
+
+msgid "Off"
+msgstr "Aus"
+
+msgid "Low"
+msgstr "Schwach"
+
+msgid "Medium"
+msgstr "Mittel"
+
+msgid "High"
+msgstr "Stark"
+
+msgid "Small"
+msgstr "Klein"
+
+msgid "Large"
+msgstr "Groß"
+
+msgid "Huge"
+msgstr "Riesig"
+
+msgid "Chalk"
+msgstr "Kreide"
+
+msgid "Ruled"
+msgstr "Liniert"
+
+msgid "Grid"
+msgstr "Kariert"
+
+msgid "Dot"
+msgstr "Punkt"
+
+msgid "Ring"
+msgstr "Ring"
+
+msgid "Cross"
+msgstr "Kreuz"
+
+msgid "Automatic"
+msgstr "Automatisch"
+
+msgid "Compact"
+msgstr "Kompakt"
+
+msgid "Wide"
+msgstr "Breit"
+
+msgid "eraser"
+msgstr "Radierer"
+
+msgid "mouse draws"
+msgstr "Maus zeichnet"
+
+msgid "laser"
+msgstr "Laser"
+
+msgid "Undo"
+msgstr "Rückgängig"
+
+msgid "elapsed / time left; click to start or pause (t)"
+msgstr "vergangen / verbleibend; klicken zum Starten oder Anhalten (t)"
+
+msgid "viewed slide / total"
+msgstr "angezeigte Folie / insgesamt"
+
+msgid ":command  (Tab, :help)"
+msgstr ":Befehl  (Tab, :help)"
+
+msgid "current pen, eraser, laser and board"
+msgstr "aktueller Stift, Radierer, Laser und Tafel"
+
+msgid "schedule against the planned length, estimated finish time, clock"
+msgstr "Abweichung vom Plan, voraussichtliches Ende, Uhrzeit"
+
+msgid "viewed slide / total (projected slide)"
+msgstr "angezeigte Folie / insgesamt (Folie am Projektor)"
+
+msgid "audience"
+msgstr "Publikum"
+
+msgid "next"
+msgstr "nächste"
+
+msgid "Search slides and notes, Enter to run"
+msgstr "Folien und Notizen durchsuchen, Enter zum Suchen"
+
+msgid "  (not supported by this projector)"
+msgstr "  (von diesem Projektor nicht unterstützt)"
+
+msgid "layout: auto, compact, wide or toggle"
+msgstr "layout: auto, compact, wide oder toggle"
+
+msgid "goto needs a slide number"
+msgstr "goto braucht eine Foliennummer"
+
+msgid "target needs a length like 90, 1h30, 1:30 or 45m (at most 24 h)"
+msgstr "target braucht eine Dauer wie 90, 1h30, 1:30 oder 45m (höchstens 24 h)"
+
+msgid "go to slide number"
+msgstr "zu Foliennummer springen"
+
+msgid "Menu"
+msgstr "Menü"
+
+msgid "Start or pause"
+msgstr "Starten oder anhalten"
+
+msgid "Reset"
+msgstr "Zurücksetzen"
+
+msgid "Custom length…"
+msgstr "Eigene Dauer…"
+
+msgid "Mouse drawing"
+msgstr "Zeichnen mit der Maus"
+
+msgid "Eraser"
+msgstr "Radierer"
+
+msgid "Highlighter"
+msgstr "Textmarker"
+
+msgid "Redo"
+msgstr "Wiederholen"
+
+msgid "Clear slide ink"
+msgstr "Zeichnungen der Folie löschen"
+
+msgid "Erase all ink"
+msgstr "Alle Zeichnungen löschen"
+
+msgid "Restore erased ink"
+msgstr "Gelöschte Zeichnungen zurückholen"
+
+msgid "Export annotated PDF"
+msgstr "PDF mit Zeichnungen exportieren"
+
+msgid "Laser pointer"
+msgstr "Laserpointer"
+
+msgid "Previous slide"
+msgstr "Vorherige Folie"
+
+msgid "Next slide"
+msgstr "Nächste Folie"
+
+msgid "Go to slide…"
+msgstr "Zu Folie springen…"
+
+msgid "Overview"
+msgstr "Übersicht"
+
+msgid "Search"
+msgstr "Suche"
+
+msgid "Freeze"
+msgstr "Einfrieren"
+
+msgid "Blackout"
+msgstr "Abdunkeln"
+
+msgid "Chalkboard"
+msgstr "Tafel"
+
+msgid "Projector fullscreen"
+msgstr "Projektor im Vollbild"
+
+msgid "Console fullscreen"
+msgstr "Konsole im Vollbild"
+
+msgid "Vim keys"
+msgstr "Vim-Tasten"
+
+msgid "Show slide for note hits"
+msgstr "Folie bei Notiztreffern zeigen"
+
+msgid "Help and shortcuts"
+msgstr "Hilfe und Tastenkürzel"
+
+msgid "Slide {n}"
+msgstr "Folie {n}"
+
+msgid "Commands"
+msgstr "Befehle"
+
+msgid "wrote {path} ({pages} pages)"
+msgstr "{path} geschrieben ({pages} Seiten)"
+
+msgid "board: {style}"
+msgstr "Tafel: {style}"
+
+msgid "{tip} - not supported by this projector"
+msgstr "{tip} – von diesem Projektor nicht unterstützt"
+
+msgid "slide {n}"
+msgstr "Folie {n}"
+
+msgid "No matches"
+msgstr "Keine Treffer"
+
+msgid "unknown command: {name} (:help lists them)"
+msgstr "unbekannter Befehl: {name} (Liste: :help)"
+
+msgid "{name} needs a number 0..{maximum}"
+msgstr "{name} braucht eine Zahl 0..{maximum}"
+
+msgid "Notes (slide {n})"
+msgstr "Notizen (Folie {n})"
+
+msgid "export failed: {error}"
+msgstr "Export fehlgeschlagen: {error}"
+
+msgid "math image error: {error}"
+msgstr "Fehler beim Formelbild: {error}"
+
+msgid "on time"
+msgstr "im Plan"
+
+msgid "ends {time}"
+msgstr "Ende {time}"
+
+msgid "ahead {time}"
+msgstr "voraus {time}"
+
+msgid "behind {time}"
+msgstr "Rückstand {time}"
+
+msgid "previous slide (h)"
+msgstr "vorherige Folie (h)"
+
+msgid "next slide (l)"
+msgstr "nächste Folie (l)"
+
+msgid "all slides (o)"
+msgstr "alle Folien (o)"
+
+msgid "search slides and notes (/)"
+msgstr "Folien und Notizen durchsuchen (/)"
+
+msgid "hold the projector (z)"
+msgstr "Projektor anhalten (z)"
+
+msgid "black out the projector (b)"
+msgstr "Projektor abdunkeln (b)"
+
+msgid "chalkboard (B)"
+msgstr "Tafel (B)"
+
+msgid "laser pointer (p)"
+msgstr "Laserpointer (p)"
+
+msgid "mouse drawing (d)"
+msgstr "Zeichnen mit der Maus (d)"
+
+msgid "eraser (e)"
+msgstr "Radierer (e)"
+
+msgid "undo ink (u)"
+msgstr "Zeichnung rückgängig (u)"
+
+msgid "redo ink (U)"
+msgstr "Zeichnung wiederholen (U)"
+
+msgid "projector fullscreen (f)"
+msgstr "Projektor im Vollbild (f)"
+
+msgid "console fullscreen (F)"
+msgstr "Konsole im Vollbild (F)"
+
+msgid "switch compact / wide layout"
+msgstr "zwischen kompaktem und breitem Layout wechseln"
+
+msgid "{name}: not supported by this projector"
+msgstr "{name}: von diesem Projektor nicht unterstützt"
+
+msgid "projector: {error}"
+msgstr "Projektor: {error}"
+
+msgid "mouse drawing off"
+msgstr "Zeichnen mit der Maus aus"
+
+msgid "mouse drawing on"
+msgstr "Zeichnen mit der Maus an"
+
+msgid "eraser off"
+msgstr "Radierer aus"
+
+msgid "eraser on"
+msgstr "Radierer an"
+
+msgid "highlighter on"
+msgstr "Textmarker an"
+
+msgid "nothing to erase"
+msgstr "nichts zu löschen"
+
+msgid "nothing to restore"
+msgstr "nichts wiederherzustellen"
+
+msgid "pen colour {color}"
+msgstr "Stiftfarbe {color}"
+
+msgid "pen width {width}"
+msgstr "Stiftbreite {width}"
+
+msgid "smoothing {level}"
+msgstr "Glättung {level}"
+
+msgid "eraser radius {value}"
+msgstr "Radierer-Radius {value}"
+
+msgid "highlighter opacity {value}"
+msgstr "Textmarker-Deckkraft {value}"
+
+msgid "board background {name}"
+msgstr "Tafelhintergrund: {name}"
+
+msgid "laser colour {color}"
+msgstr "Laserfarbe {color}"
+
+msgid "laser size {value}"
+msgstr "Lasergröße {value}"
+
+msgid "laser shape {name}"
+msgstr "Laserform: {name}"
+
+msgid "colour: {names} or #rrggbb"
+msgstr "Farbe: {names} oder #rrggbb"
+
+msgid "width needs 1..{maximum}"
+msgstr "Breite: 1..{maximum}"
+
+msgid "smooth needs 0..{maximum}"
+msgstr "Glättung: 0..{maximum}"
+
+msgid "eraser-size needs {low}..{high}"
+msgstr "eraser-size: {low}..{high}"
+
+msgid "highlight-alpha needs {low}..{high}"
+msgstr "highlight-alpha: {low}..{high}"
+
+msgid "board-style: {names}"
+msgstr "board-style: {names}"
+
+msgid "laser-size needs {low}..{high}"
+msgstr "laser-size: {low}..{high}"
+
+msgid "laser-style: {names}"
+msgstr "laser-style: {names}"
+
+msgid "erased {count} strokes (undo restores a layer)"
+msgstr "{count} Striche gelöscht (Rückgängig stellt eine Ebene wieder her)"
+
+msgid "restored ink on {count} layers"
+msgstr "Zeichnungen auf {count} Ebenen wiederhergestellt"
+
+msgid " :command  /search  o overview  l/h next/prev  j/k scroll  ? help"
+msgstr " :Befehl  /Suche  o Übersicht  l/h vor/zurück  j/k scrollen  ? Hilfe"
+
+msgid "no ink store"
+msgstr "kein Zeichenspeicher vorhanden"
+
+msgid "help - Enter starts typing the command"
+msgstr "Hilfe – Enter beginnt die Eingabe des Befehls"
+
+msgid "overview"
+msgstr "Übersicht"
+
+msgid "notes"
+msgstr "Notizen"
+
+msgid " j/k move  Enter pick  Esc back"
+msgstr " j/k bewegen  Enter wählen  Esc zurück"
+
+msgid "{message} (draw on the projector window)"
+msgstr "{message} (im Projektorfenster zeichnen)"
+
+msgid "[frozen]"
+msgstr "[eingefroren]"
+
+msgid "view"
+msgstr "Ansicht"
+
+msgid "no matches for {query}"
+msgstr "keine Treffer für {query}"
+
+msgid "search: {query}"
+msgstr "Suche: {query}"
+
+msgid "notes (slide {n})"
+msgstr "Notizen (Folie {n})"
+
+msgid "{name}: needs the GTK console (lectos)"
+msgstr "{name}: braucht die GTK-Konsole (lectos)"
+
+msgid "unknown command: {name} (:help)"
+msgstr "unbekannter Befehl: {name} (:help)"
+
+msgid "  (needs the GTK console)"
+msgstr "  (braucht die GTK-Konsole)"
+
+msgid "(blank)"
+msgstr "(leer)"
+
+msgid "(proj {n})"
+msgstr "(Projektor {n})"
+
+msgid "(paused)"
+msgstr "(angehalten)"
