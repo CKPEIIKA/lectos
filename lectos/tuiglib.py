@@ -74,6 +74,7 @@ def run(
             tui = make_tui(pdf, notes, options, projector, deck=core.deck, ink=core.ink, stage=core.stage)
         except RuntimeError as exc:
             failure.append(str(exc))
+            app.quit()  # the projector window is already up; without this the process would hang
             return
         terminal = Terminal()
         terminal.__enter__()

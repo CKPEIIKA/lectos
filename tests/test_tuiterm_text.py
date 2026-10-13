@@ -1,7 +1,7 @@
 import pytest
 
 from lectos.notes import parse
-from lectos.tuiterm import decode
+from lectos.tuiterm import KeyDecoder, decode
 from lectos.tuitext import clip, pad, visible_len, wrap
 from lectos.unimath import to_unicode
 
@@ -53,3 +53,18 @@ def test_wrap_respects_width_and_styles_headings_and_math() -> None:
 )
 def test_unicode_math(tex: str, expected: str) -> None:
     assert to_unicode(tex) == expected
+
+
+def test_key_decoder_keeps_a_utf8_character_split_across_reads() -> None:
+    data = "привет".encode()
+    for cut in range(1, len(data)):
+        decoder = KeyDecoder()
+        assert decoder.feed(data[:cut]) + decoder.feed(data[cut:]) == list("привет"), cut
+    decoder = KeyDecoder()
+    assert decoder.feed(b"\xd0") == []  # half a character: nothing yet, nothing lost
+    assert decoder.feed(b"\xbf") == ["\u043f"]
+    assert decoder.feed(b"\x1b[A l") == ["Up", " ", "l"]
+
+
+def test_one_shot_decode_still_drops_garbage() -> None:
+    assert decode(b"\xff\xfel") == ["l"]

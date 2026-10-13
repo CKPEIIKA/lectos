@@ -183,6 +183,7 @@ class Tui:
             "board-style": lambda a: self._tool("board_style", a),
             "highlighter": lambda a: self._tool("highlighter", c.flag(a, self._tool_value("highlighter"))),
             "clear-all": lambda _a: self._tool("clear_all"),
+            "restore-all": lambda _a: self._tool("restore_all"),
         }
         return apply_caps(table, self.projector.caps, self._set_message)
 

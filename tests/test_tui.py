@@ -7,9 +7,9 @@ from lectos.config import Options
 from lectos.deck import Deck
 from lectos.ink import Ink
 from lectos.notes import MarkdownNotes
-from lectos.projection import GTK_CAPS, NullProjector
+from lectos.projection import COMMAND_CAPS, GTK_CAPS, NullProjector
 from lectos.stage import Stage
-from lectos.tui import PdfInfo, Tui
+from lectos.tui import GTK_ONLY, PdfInfo, Tui
 from lectos.tuitext import visible_len
 
 PAGES = 6
@@ -363,3 +363,20 @@ def test_lecture_length_formats(tmp_path: Path) -> None:
     tui.execute("target x")
     assert "target needs a length" in tui.message
     assert tui.timer.target_min == 135
+
+
+def test_every_capability_gated_command_is_registered_or_explained(tmp_path: Path) -> None:
+    tui, _, _ = make(tmp_path, GTK_CAPS - {"laser"}, with_ink=True)
+    for name in COMMAND_CAPS:
+        assert name in tui._commands or name in GTK_ONLY, f"{name} is neither a terminal command nor marked GTK-only"
+
+
+def test_restore_all_brings_back_what_clear_all_erased(tmp_path: Path) -> None:
+    tui, _, _ = make(tmp_path, GTK_CAPS - {"laser"}, with_ink=True)
+    assert tui.ink is not None
+    tui.ink.begin("s0", 0.0, 0.0, 1.0)
+    tui.execute("clear-all")
+    assert not tui.ink.strokes("s0")
+    tui.execute("restore-all")
+    assert len(tui.ink.strokes("s0")) == 1
+    assert "restored" in tui.message

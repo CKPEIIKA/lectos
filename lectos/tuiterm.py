@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import codecs
 import os
 import select
 import shutil
@@ -20,9 +21,7 @@ ENTER_SCREEN = "\x1b[?1049h\x1b[?25l\x1b[2J"
 LEAVE_SCREEN = "\x1b[?25h\x1b[?1049l"
 
 
-def decode(data: bytes) -> list[str]:
-    """Turn raw terminal input into key names: plain characters, or Up, PageDown, Enter, Esc, C-c, ..."""
-    text = data.decode("utf-8", errors="ignore")
+def _keys(text: str) -> list[str]:
     keys: list[str] = []
     i = 0
     while i < len(text):
@@ -44,12 +43,29 @@ def decode(data: bytes) -> list[str]:
     return [k for k in keys if k]
 
 
+class KeyDecoder:
+    """Turns raw terminal bytes into key names; a UTF-8 character split across two reads is kept whole."""
+
+    def __init__(self) -> None:
+        self._utf8 = codecs.getincrementaldecoder("utf-8")(errors="ignore")
+
+    def feed(self, data: bytes) -> list[str]:
+        """Decode one chunk: plain characters, or Up, PageDown, Enter, Esc, C-c, ..."""
+        return _keys(self._utf8.decode(data))
+
+
+def decode(data: bytes) -> list[str]:
+    """Decode a complete chunk of terminal input (use ``KeyDecoder`` for a stream)."""
+    return _keys(data.decode("utf-8", errors="ignore"))
+
+
 class Terminal:
     """Context manager: raw mode on the alternate screen; restores the terminal on exit."""
 
     def __init__(self) -> None:
         self._fd = sys.stdin.fileno()
         self._saved: list | None = None
+        self._decoder = KeyDecoder()
 
     def __enter__(self) -> Terminal:
         self._saved = termios.tcgetattr(self._fd)
@@ -78,7 +94,7 @@ class Terminal:
     def read_keys(self, timeout: float) -> list[str]:
         """Wait up to ``timeout`` seconds for input; return the decoded keys (possibly none)."""
         ready, _, _ = select.select([self._fd], [], [], timeout)
-        return decode(os.read(self._fd, READ_BYTES)) if ready else []
+        return self._decoder.feed(os.read(self._fd, READ_BYTES)) if ready else []
 
     @staticmethod
     def draw(lines: list[str]) -> None:

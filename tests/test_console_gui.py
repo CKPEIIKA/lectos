@@ -225,3 +225,9 @@ def test_console_in_russian(tmp_path_factory: pytest.TempPathFactory) -> None:
     finally:
         i18n.init("en")
         mp.undo()
+
+
+def test_every_capability_gated_command_exists_in_the_gtk_console(console) -> None:
+    from lectos.projection import COMMAND_CAPS
+
+    assert set(COMMAND_CAPS) <= set(console._commands)

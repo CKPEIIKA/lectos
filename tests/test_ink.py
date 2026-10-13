@@ -103,6 +103,9 @@ def test_load_skips_malformed_data() -> None:
                 "s1": [
                     {"c": "#fff000", "w": 3, "p": [[1, 2, 0.5]]},
                     {"c": "red", "w": 3, "p": [[1, 2, 0.5]]},  # bad colour
+                    {"c": "#zzzzzz", "w": 3, "p": [[1, 2, 0.5]]},  # '#' but not hex: would crash rendering
+                    {"c": "#abc", "w": 3, "p": [[1, 2, 0.5]]},  # too short
+                    {"c": "#", "w": 3, "p": [[1, 2, 0.5]]},
                     {"c": "#fff000", "w": "x", "p": [[1, 2, 0.5]]},  # bad width
                     {"c": "#fff000", "w": 3, "p": [[1, 2]]},  # bad point
                     "junk",
@@ -188,3 +191,32 @@ def test_parse_number_and_smooth_edge_cases() -> None:
     pts = [(0.0, 0.0, 1.0), (1.0, 1.0, 1.0)]
     assert smooth(pts, 3) == pts
     assert smooth(pts * 3, 0) == pts * 3
+
+
+def test_restore_cleared_is_forgotten_once_the_layer_changes_again() -> None:
+    ink = Ink()
+    draw(ink, LAYER, (0, 0), (9, 9))  # stroke A
+    ink.clear_all()
+    draw(ink, LAYER, (50, 50), (60, 60))  # the presenter draws stroke B before restoring
+    assert ink.restore_cleared() == 0  # must not undo B and then claim A came back
+    assert len(ink.strokes(LAYER)) == 1
+    assert ink.strokes(LAYER)[0].points[0][:2] == (50.0, 50.0)  # B is still there
+
+
+def test_restore_cleared_after_an_explicit_undo_does_not_undo_twice() -> None:
+    ink = Ink()
+    draw(ink, LAYER, (0, 0), (9, 9))
+    draw(ink, BOARD_LAYER, (0, 0), (9, 9))
+    ink.clear_all()
+    ink.undo(LAYER)  # the presenter already got this layer back by hand
+    assert ink.restore_cleared() == 1  # only the board is still pending
+    assert len(ink.strokes(LAYER)) == 1
+    assert len(ink.strokes(BOARD_LAYER)) == 1
+
+
+def test_load_forgets_pending_restore() -> None:
+    ink = Ink()
+    draw(ink, LAYER, (0, 0), (9, 9))
+    ink.clear_all()
+    ink.load({"layers": {}})
+    assert ink.restore_cleared() == 0

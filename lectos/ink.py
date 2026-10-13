@@ -134,7 +134,13 @@ class Ink:
         """Strokes of a layer, oldest first."""
         return self.layers.get(layer, [])
 
+    def _forget_cleared(self, layer: str) -> None:
+        """Any later change to a layer means "restore the erased ink" no longer applies to it."""
+        if layer in self.last_cleared:
+            self.last_cleared.remove(layer)
+
     def _snapshot(self, layer: str) -> None:
+        self._forget_cleared(layer)
         history = self._undo.setdefault(layer, [])
         history.append(list(self.layers.get(layer, [])))
         del history[:-MAX_UNDO]
@@ -215,6 +221,7 @@ class Ink:
 
     def undo(self, layer: str) -> None:
         """Restore the layer as it was before the last change."""
+        self._forget_cleared(layer)
         history = self._undo.get(layer, [])
         if history:
             self._redo.setdefault(layer, []).append(list(self.strokes(layer)))
@@ -223,6 +230,7 @@ class Ink:
 
     def redo(self, layer: str) -> None:
         """Re-apply the last undone change."""
+        self._forget_cleared(layer)
         future = self._redo.get(layer, [])
         if future:
             self._undo.setdefault(layer, []).append(list(self.strokes(layer)))
@@ -251,6 +259,7 @@ class Ink:
         self.layers.clear()
         self._undo.clear()
         self._redo.clear()
+        self.last_cleared = []
         raw = data.get("layers") if isinstance(data, dict) else None
         for name, strokes in raw.items() if isinstance(raw, dict) else []:
             parsed = [s for s in (_parse_stroke(item) for item in strokes) if s] if isinstance(strokes, list) else []
@@ -273,7 +282,7 @@ def _parse_stroke(item: object) -> Stroke | None:
         nums = [_num(v) for v in raw] if isinstance(raw, list) and len(raw) == 3 else []  # noqa: PLR2004
         if nums and all(v is not None for v in nums):
             points.append((nums[0], nums[1], nums[2]))  # ty: ignore[invalid-argument-type]
-    if not points or width is None or not isinstance(color, str) or not color.startswith("#"):
+    if not points or width is None or not isinstance(color, str) or not _HEX_RE.fullmatch(color):
         return None
     alpha = _num(item.get("a"))
     return Stroke(points, color, width, 1.0 if alpha is None else max(0.0, min(alpha, 1.0)))
