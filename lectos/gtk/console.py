@@ -1049,7 +1049,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             "clear-all": lambda _a: self._cmd_clear_all(),
             "restore-all": lambda _a: self._tool(t.restore_all),
             "draw": lambda a: self._set_tool("mouse_draw", c.flag(a, self.ink.tool.mouse_draw)),
-            "eraser": lambda a: self._set_tool("eraser", c.flag(a, self.ink.tool.eraser)),
+            "eraser": lambda a: self._tool(t.eraser, c.flag(a, self.ink.tool.eraser)),
             "highlighter": lambda a: self._tool(t.highlighter, c.flag(a, self.ink.tool.highlighter)),
             "color": lambda a: self._tool(t.color, a),
             "width": lambda a: self._tool(t.width, a),

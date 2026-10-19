@@ -848,8 +848,8 @@ msgstr "Starten"
 msgid "Open a presentation"
 msgstr "Präsentation öffnen"
 
-msgid "Choose the PDF slides and, if you have them, the lecture notes (Markdown or Beamer .tex)."
-msgstr "Wähle die PDF-Folien und, falls vorhanden, die Vortragsnotizen (Markdown oder Beamer-.tex)."
+msgid "Choose the PDF slides and, if you have them, the lecture notes (Markdown or Beamer .tex). You can also drop a PDF, notes file, or folder here, or press Ctrl+O to choose slides."
+msgstr "Wähle die PDF-Folien und, falls vorhanden, die Vortragsnotizen (Markdown oder Beamer-.tex). Du kannst auch hier eine PDF, Notizdatei oder einen Ordner ablegen oder mit Strg+O die Folien auswählen."
 
 msgid "Choose the slides"
 msgstr "Folien wählen"

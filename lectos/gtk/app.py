@@ -217,6 +217,7 @@ def run(
     app = Adw.Application(
         application_id="org.lectos.app", flags=Gio.ApplicationFlags.NON_UNIQUE
     )  # several decks can run at once
+    app.set_accels_for_action("win.open", ["<Control>o"])
     launcher = Launcher(app, options, projector=projector, windowed=windowed, monitor=monitor)
     register_icons()
     Gtk.Window.set_default_icon_name(CONSOLE_ICON)

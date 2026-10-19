@@ -170,7 +170,7 @@ class Tui:
             "blackout": lambda a: self._cmd_blackout(c.flag(a, deck.blackout)),
             "board": lambda a: self._cmd_board(c.flag(a, deck.board)),
             "draw": lambda a: self._set_tool_flag("mouse_draw", c.flag(a, self._tool_value("mouse_draw"))),
-            "eraser": lambda a: self._set_tool_flag("eraser", c.flag(a, self._tool_value("eraser"))),
+            "eraser": lambda a: self._tool("eraser", c.flag(a, self._tool_value("eraser"))),
             "undo": lambda _a: self._with_ink(lambda ink, layer: ink.undo(layer)),
             "redo": lambda _a: self._with_ink(lambda ink, layer: ink.redo(layer)),
             "clear": lambda _a: self._with_ink(lambda ink, layer: ink.clear(layer)),

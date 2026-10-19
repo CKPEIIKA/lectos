@@ -60,7 +60,7 @@ Keys (arrows, Space, PageUp/PageDown, Home/End always work; vim keys are optiona
 
 Drawing, laser and chalkboard: draw on the large preview in the console with a pen (the eraser end erases); a mouse draws only after `draw on`. Ink belongs to the slide you are looking at and is stored per page; the chalkboard (`board`) has its own ink, so slide ink and board ink never mix. Everything is configurable, in `options.toml` (`[drawing]`, `[laser]`) and while presenting:
 
-- pen: `color`, `width`, `highlighter` (wide translucent strokes; `highlight-alpha`), `smooth 0..5` (smooths finished strokes), `eraser-size`, `draw`, `eraser`
+- pen: `color`, `width`, `highlighter` (wide translucent strokes; `highlight-alpha`), `smooth 0..5` (smooths finished strokes), `eraser-size`, `draw`, `eraser`. Highlighter and eraser are exclusive modes; turning either off returns to the pen.
 - history: `undo`, `redo`, `clear` (this slide or the board), `clear-all` (**every** slide and the board; a toast offers Undo, and `restore-all` brings it back), `export [FILE]` (the slides with your ink as a new PDF, plus a final page for the chalkboard if it has ink; an existing file is never overwritten, a `-2` name is used instead)
 - chalkboard: `board`, `board-style chalk|black|white|ruled|grid`
 - laser: `laser` (the dot follows the pointer over the large preview and shows on the projector), `laser-color`, `laser-size 3..30`, `laser-style dot|ring|cross`
@@ -91,7 +91,7 @@ See `examples/options.toml` and `examples/standby.svg`. Status: tested with unit
 
 ## Opening slides
 
-`lectos` without arguments opens a start window: choose the PDF slides, the notes (optional) or a whole folder. Notes next to the slides (`slides.tex`, `slides.md`, then `notes.tex`, `notes.md`) are found automatically, also when you give a PDF or a folder on the command line. **Open other slides…** in the menu (or `:open`) returns to the start window while presenting; the old deck's state is saved first.
+`lectos` without arguments opens a start window: choose the PDF slides, the notes (optional) or a whole folder. You can also drop one PDF, one `.md` or `.tex` notes file, both files together, or a folder onto the window. `Ctrl+O` opens the slide chooser there and opens the existing **Open other slides…** flow while presenting; `:open` does the same. Notes next to the slides (`slides.tex`, `slides.md`, then `notes.tex`, `notes.md`) are found automatically, also when you give a PDF or a folder on the command line; the old deck's state is saved before switching.
 
 ## Editing notes
 

@@ -22,7 +22,6 @@ from lectos.model.style import BOARD_STYLES, LASER_STYLES, MAX_LASER_PX, MIN_LAS
 COLOR_NAMES = ", ".join(COLORS)
 TOOL_FLAG_MESSAGES = {  # (off, on); translate with tr() when shown
     "mouse_draw": (noop("mouse drawing off"), noop("mouse drawing on")),
-    "eraser": (noop("eraser off"), noop("eraser on")),
 }
 
 
@@ -53,8 +52,16 @@ class Tools:
     def highlighter(self, on: bool) -> str:
         """Switch between pen and highlighter."""
         self.ink.tool.highlighter = on
+        self.ink.tool.eraser = False
         self.ink.notify()
         return tr("highlighter on") if on else tr("pen")
+
+    def eraser(self, on: bool) -> str:
+        """Switch between pen and eraser."""
+        self.ink.tool.eraser = on
+        self.ink.tool.highlighter = False
+        self.ink.notify()
+        return tr("eraser on") if on else tr("pen")
 
     def smoothing(self, arg: str) -> str:
         """Stroke smoothing level."""

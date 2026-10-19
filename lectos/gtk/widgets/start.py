@@ -7,14 +7,16 @@ from pathlib import Path
 
 import gi
 
+gi.require_version("Gdk", "4.0")
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gio, GLib, Gtk
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from lectos.i18n import tr
-from lectos.paths import discover, notes_for
+from lectos.paths import NOTES_SUFFIXES, discover, notes_for
 
 SLIDES_ICON = "lectos"
+MAX_DROP_FILES = 2
 
 
 class StartWindow(Adw.ApplicationWindow):
@@ -48,7 +50,10 @@ class StartWindow(Adw.ApplicationWindow):
         page = Adw.StatusPage(
             icon_name=SLIDES_ICON,
             title=tr("Open a presentation"),
-            description=tr("Choose the PDF slides and, if you have them, the lecture notes (Markdown or Beamer .tex)."),
+            description=tr(
+                "Choose the PDF slides and, if you have them, the lecture notes (Markdown or Beamer .tex). "
+                "You can also drop a PDF, notes file, or folder here, or press Ctrl+O to choose slides."
+            ),
         )
         box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL, spacing=12, margin_start=16, margin_end=16, margin_bottom=16
@@ -59,6 +64,12 @@ class StartWindow(Adw.ApplicationWindow):
         toolbar = Adw.ToolbarView(content=page)
         toolbar.add_top_bar(Adw.HeaderBar())
         self.set_content(toolbar)
+        drop = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
+        drop.connect("drop", self._drop_files)
+        self.add_controller(drop)
+        open_action = Gio.SimpleAction.new("open", None)
+        open_action.connect("activate", lambda *_args: self.choose_slides())
+        self.add_action(open_action)
 
     # ---- choices ----
     def set_slides(self, pdf: Path) -> None:
@@ -102,6 +113,43 @@ class StartWindow(Adw.ApplicationWindow):
         """Present the chosen slides."""
         if self.slides is not None:
             self.on_start(self.slides, self.notes)
+
+    @staticmethod
+    def _drop_paths(value: object) -> list[Path] | None:
+        """Get a bounded list of local paths from a file drop."""
+        if not isinstance(value, Gdk.FileList):
+            return None
+        files = value.get_files()
+        if not files or len(files) > MAX_DROP_FILES:
+            return None
+        paths: list[Path] = []
+        for file in files:
+            path = file.get_path()
+            if path is None:
+                return None
+            paths.append(Path(path))
+        return paths
+
+    def _apply_drop(self, paths: list[Path]) -> bool:
+        """Accept one PDF, one notes file, both together, or one folder containing a presentation."""
+        if not paths:
+            return False
+        if len(paths) == 1 and paths[0].is_dir():
+            return self.set_folder(paths[0])
+        slides = [path for path in paths if path.is_file() and path.suffix.lower() == ".pdf"]
+        notes = [path for path in paths if path.is_file() and path.suffix.lower() in NOTES_SUFFIXES]
+        if len(slides) > 1 or len(notes) > 1 or len(slides) + len(notes) != len(paths):
+            return False
+        if slides:
+            self.set_slides(slides[0])
+        if notes:
+            self.set_notes(notes[0])
+        return bool(slides or notes)
+
+    def _drop_files(self, _target: Gtk.DropTarget, value: object, _x: float, _y: float) -> bool:
+        """Route local file drops into the same selection methods as the file dialogs."""
+        paths = self._drop_paths(value)
+        return self._apply_drop(paths) if paths is not None else False
 
     # ---- file dialogs ----
     def _dialog(self, title: str, patterns: tuple[str, ...] = ()) -> Gtk.FileDialog:
