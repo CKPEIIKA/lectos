@@ -114,9 +114,9 @@ Every exception must be narrow, documented beside its configuration, and removed
 
 ## Common work-tracking rules
 
-1. Keep the active backlog in root `TODO.md` and completed work in root `DONE.md`.
-2. `TODO.md` contains unfinished, concrete, and verifiable work; move meaningful completions to `DONE.md`.
-3. `DONE.md` records outcomes and validation evidence, newest first.
+1. Keep the active backlog in `docs/TODO.md` and completed work in `docs/DONE.md`.
+2. `docs/TODO.md` contains unfinished, concrete, and verifiable work; move meaningful completions to `docs/DONE.md`.
+3. `docs/DONE.md` records outcomes and validation evidence, newest first.
 4. A project contract may declare an operational path exception when tooling depends on it. `regression_vibe` retains `WIP/TODO.md` and `WIP/done.md` as that explicit exception.
 5. Keep commit subjects concise, imperative, and without a period; explain context and rationale in the body for non-trivial changes.
 

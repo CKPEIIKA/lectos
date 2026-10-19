@@ -1,84 +1,107 @@
-# lectos
+# LECTOS(1)
 
-A presenter tool for Linux. You give it PDF slides and, optionally, lecture notes; it gives you a presenter console (current and next slide, notes, timer, search, overview) and a projector window for the audience, with pen, laser pointer, chalkboard, blackout and freeze.
+## NAME
+
+`lectos` — Linux presenter console and projector for PDF slides and lecture notes
+
+## SYNOPSIS
+
+```text
+lectos [OPTIONS] [PDF|FOLDER] [NOTES.md|NOTES.tex]
+lectos-tui [OPTIONS] PDF|FOLDER [NOTES.md|NOTES.tex]
+```
+
+## DESCRIPTION
+
+`lectos` presents a compiled PDF with optional Markdown or Beamer notes. Choose GTK or terminal for the console and GTK,
+Zathura, or no projector independently. The GTK console adds slide previews, notes, search, overview, a timer, drawing,
+and presentation recovery. Lectos reads Beamer notes but never compiles slides or edits the `.tex` file.
+
+By default, `lectos` without arguments opens a chooser for slides, notes, or a folder. Drop a PDF, notes file, both files,
+or a folder onto it. In the GTK console, `Ctrl+O` opens the slide chooser or switches presentations. Notes beside a PDF
+are found automatically.
 
 ![The wide layout on a big screen: slide with ink and laser, audience and next previews, notes with typeset math, and the filmstrip](docs/screenshots/wide.png)
 
-> This project is vibe-coded. Treat documented support boundaries and quality gates as the source of truth, and verify behavior for your use case.
+This project is vibe-coded. Treat the documented support boundaries and quality gates as the source of truth, and
+verify behavior for your use case.
 
-## Install
+## INSTALLATION
 
-You need Python 3.13+ and [uv](https://docs.astral.sh/uv/), plus system packages that Python cannot install: GTK 4, libadwaita 1.4+, PyGObject and the Poppler GObject typelib. Optional: `latex` and `dvipng` (typeset math in notes), `zathura` (alternative projector), `pdftoppm`, `pdftotext` and `chafa` (terminal console).
+Requires Python 3.13+, GTK 4, libadwaita 1.4+, PyGObject, and the Poppler GObject typelib. Optional tools are
+`latex` and `dvipng` for formula images, `zathura` for the alternative projector, and `pdftoppm`, `pdftotext`, and
+`chafa` for terminal previews.
 
-Straight from GitHub (puts `lectos` and `lectos-tui` on your PATH):
+Install from GitHub with `pipx`:
 
 ```bash
 pipx install --python python3.13 --system-site-packages "lectos @ git+https://github.com/CKPEIIKA/lectos.git"
-# or with plain pip:
-python3.13 -m venv --system-site-packages ~/.venvs/lectos
-~/.venvs/lectos/bin/pip install git+https://github.com/CKPEIIKA/lectos.git
 ```
 
-`--system-site-packages` matters: PyGObject, GTK and Poppler come from the system and are not on PyPI as ready packages. Upgrade with `pipx upgrade lectos` (or `pip install -U` again).
-
-From a clone, for development:
+PyGObject and Poppler come from the system, so keep `--system-site-packages` enabled. For a source checkout, install
+`uv` and run:
 
 ```bash
 git clone https://github.com/CKPEIIKA/lectos.git
 cd lectos
-uv venv --system-site-packages --python /usr/bin/python3.13   # PyGObject comes from the system
+uv venv --system-site-packages --python /usr/bin/python3.13
 uv sync --locked
 ```
 
-## Run
-
-With the clone, prefix the commands with `uv run`; after `pipx install` they are plain commands.
+## EXAMPLES
 
 ```bash
-uv run lectos                                  # opens a window: choose slides, notes or a folder
-uv run lectos slides.pdf                       # notes next to it (slides.tex or slides.md) are used
-uv run lectos slides.pdf notes.md              # or name them
-uv run lectos talk/                            # a folder with the PDF and its notes
-uv run lectos-tui slides.pdf                   # terminal console, Zathura as projector, no GTK
-uv run lectos examples/slides.pdf              # try the sample deck
+lectos                                  # choose slides and notes
+lectos slides.pdf                      # use notes next to the PDF, if present
+lectos slides.pdf notes.md             # name the notes explicitly
+lectos talk/                           # choose slides and notes from a folder
+lectos-tui slides.pdf notes.tex        # terminal console with Zathura
 ```
 
-With two monitors the projector window goes fullscreen on the last one; with one it stays a window (`f` toggles fullscreen). Quit with `q`, `:q` or by closing the console; the page, timer, notes position, layout and your drawings are restored next time.
+With a source checkout, run these commands with `uv run` (for example, `uv run lectos examples/slides.pdf`).
 
-## The basics
+## KEYS
 
-| key | action |
+| Key | Action |
 |---|---|
-| `l` / `h`, arrows, Space | next / previous slide |
-| `:` | command line (Tab completes, `:help` lists every command) |
-| `o`, `/` | overview grid, search |
-| `z`, `b`, `B` | freeze projector, blackout, chalkboard |
-| `d`, `e`, `p` | mouse drawing, eraser, laser pointer |
-| `s` | quick drawing layout |
-| `E`, `S` | edit this slide's notes, settings |
-| `t`, `f`, `F` | timer, projector fullscreen, console fullscreen |
+| `Ctrl+O` (GTK) | Choose slides or switch presentations |
+| Arrows, Space, Page Up/Down, Home/End | Navigate slides |
+| `:` | Open the command line; Tab completes and `:help` lists commands |
+| `o`, `/` | Overview, search |
+| `z`, `b`, `B` | Freeze, blackout, chalkboard |
+| `d`, `e`, `p`, `s` | Mouse drawing, eraser, laser, drawing layout |
+| `E`, `S`, `t`, `f`, `F` | Edit notes, settings, timer, projector fullscreen, console fullscreen |
 
-Everything the interface does is a command on the `:` line, and the menu button holds every action. Notes are Markdown (`<!-- slide: N -->` markers) or a Beamer `.tex` with `\note{}`; you can edit them in the console, and a `.tex` is never changed. The interface speaks English, Russian and German.
+Vim keys are on by default in GTK and always on in the terminal. Feature support depends on the selected console and
+projector. With two monitors, the GTK projector opens fullscreen on the last one; with one, it stays windowed.
 
-Everything else is in the [user guide](docs/usage.md): layouts, hiding panels, drawing and laser, notes formats, the terminal console, the `options.toml` reference and the screenshots. Short manual pages: `man -l man/lectos.1`.
+## FILES
 
-## Configure
+- `$XDG_CONFIG_HOME/lectos/options.toml` — interface, layout, drawing, and projector options.
+- `$XDG_STATE_HOME/lectos/` — presentation recovery, ink, and edits to Beamer notes; the `.tex` source stays untouched.
+- `examples/` — sample slides, notes, and configuration.
 
-`$XDG_CONFIG_HOME/lectos/options.toml` (or `--config FILE`); a missing file means defaults. See [`examples/options.toml`](examples/options.toml) for every key.
+## SEE ALSO
 
-## Develop
+- [User guide](docs/usage.md) — layouts, notes, drawing, configuration, and screenshots.
+- [lectos(1)](man/lectos.1), [lectos-tui(1)](man/lectos-tui.1) — command-line reference; read locally with `man -l man/lectos.1`.
+- [TODO](docs/TODO.md), [DONE](docs/DONE.md) — backlog and completion history.
+
+## DEVELOPMENT
 
 ```bash
 uv sync --group dev
-./scripts/quality.sh        # ruff, ty, pytest with 100% coverage (the GTK tests need a display)
+./scripts/quality.sh
 ```
 
-Layout of the repository and the rules for contributors are in [`AGENTS.md`](AGENTS.md); open work is in `TODO.md`, finished work in `DONE.md`, and `lectos/` is split into subpackages (`model`, `control`, `notes`, `draw`, `projectors`, `gtk`, `term`).
+GTK tests need a display.
 
-## Credits
+## CREDITS
 
-lectos was inspired by [pympress](https://github.com/Cimbali/pympress), the dual-screen PDF presenter by Cimbali and contributors: the presenter console with current and next slide, notes and timer, clickable PDF links and annotations, and Beamer notes pages all come from ideas seen there. lectos shares no code with it.
+lectos was inspired by [pympress](https://github.com/Cimbali/pympress), by Cimbali and contributors. Its presenter
+console, current and next slide previews, notes, timer, clickable PDF links, and Beamer notes pages drew on ideas from
+pympress. lectos shares no code with it.
 
-## License
+## LICENSE
 
-GPL-3.0-only, see [LICENSE](LICENSE). Nothing from other projects is bundled; lectos uses GTK 4, libadwaita, PyGObject, pycairo, Poppler, Zathura, chafa, LaTeX and dvipng as separate programs or libraries.
+GPL-3.0-only; see [LICENSE](LICENSE).
