@@ -187,6 +187,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.previous, self.upcoming = options.previous, options.upcoming
         self.hidden = set(options.hidden)
         self._alt_alone = False
+        self._alive = True  # False once the window is gone: deferred callbacks must not touch its widgets
         self.palette = options.drawing.palette
         self.opener: Callable[[], None] | None = None  # set by the application: choose other slides
         self.on_replace_slides: Callable[[Path], None] | None = None
@@ -200,7 +201,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.deck.subscribe(self._on_deck)
         self.ink.subscribe(self._on_ink)
         self._tick_source = GLib.timeout_add(TICK_MS, self._tick)
-        self.connect("destroy", lambda *_: GLib.source_remove(self._tick_source))  # no ticks for a gone window
+        self.connect("destroy", self._on_destroy)
+        self.connect("close-request", lambda *_: self._on_destroy() or False)  # closing destroys it right after
         self.poll_notes()
         self._on_deck()
 
@@ -272,6 +274,16 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._apply_layout(force=True)
         Adw.StyleManager.get_default().connect("notify::dark", lambda *_: GLib.timeout_add(250, self._recompile_math))
 
+    def destroy(self) -> None:
+        """Destroy the window; callbacks queued for it become no-ops."""
+        self._on_destroy()
+        super().destroy()
+
+    def _on_destroy(self, *_args: object) -> None:
+        self._alive = False
+        if GLib.MainContext.default().find_source_by_id(self._tick_source) is not None:
+            GLib.source_remove(self._tick_source)  # no ticks for a gone window
+
     def _on_resized(self, *_args: object) -> None:
         """Window size changed: after it settles, pick the layout and realign what depends on the width."""
         if not self._resize_pending:
@@ -280,6 +292,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
 
     def _after_resize(self) -> bool:
         self._resize_pending = False
+        if not self._alive:
+            return False
         self._apply_layout()
         self._fit_pane()
         self._refresh_strip()
@@ -746,11 +760,18 @@ class ConsoleWindow(Adw.ApplicationWindow):
             column.append(Gtk.ScrolledWindow(child=self._strip_box, vscrollbar_policy=Gtk.PolicyType.NEVER))
         return column
 
+    @staticmethod
+    def _scrolled_bar(bar: Gtk.Widget) -> Gtk.ScrolledWindow:
+        """A toolbar that scrolls sideways instead of forcing the window wide."""
+        return Gtk.ScrolledWindow(
+            child=bar, hscrollbar_policy=Gtk.PolicyType.AUTOMATIC, vscrollbar_policy=Gtk.PolicyType.NEVER
+        )
+
     def _append_palette(self, column: Gtk.Box) -> None:
         """The pen palette under the slide, unless the user hid that panel."""
         if "palette" not in self.hidden:
             self._drawbar = DrawBar(self, self.palette)
-            column.append(self._drawbar)
+            column.append(self._scrolled_bar(self._drawbar))
 
     def _build_draw(self) -> Gtk.Widget:
         """Quick drawing: the slide as large as the window allows, with the drawing toolbar underneath."""
@@ -758,7 +779,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._drawbar = DrawBar(self, self.palette)
         column = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         column.append(self._big_preview())
-        column.append(self._drawbar)
+        column.append(self._scrolled_bar(self._drawbar))
         return column
 
     def pen_color_name(self) -> str:
@@ -812,7 +833,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
 
     def _after_layout(self, keep: float) -> bool:
         """After a rebuild, line wrapping differs: realign to the current slide's notes, else restore the offset."""
-        if self.scroller is not None:
+        if self._alive and self.scroller is not None:
             current = self._current_section()
             if current is not None:
                 self._scroll_to_section(current)
@@ -1529,6 +1550,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
         return "#{:02x}{:02x}{:02x}".format(*(round(v * 255) for v in (c.red, c.green, c.blue)))
 
     def _recompile_math(self) -> bool:
+        if not self._alive:
+            return False
         self._notes_mtime = -1  # force a reload so the formulas are compiled in the new colour
         self.poll_notes()
         return False
@@ -1538,7 +1561,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         GLib.idle_add(self._math_ready, images, generation)
 
     def _math_ready(self, images: dict[mathimg.Formula, Path], generation: int) -> bool:
-        if generation != self._notes_generation:
+        if not self._alive or generation != self._notes_generation:
             return False  # notes changed again while compiling
         try:
             self._textures = {f: Gdk.Texture.new_from_filename(str(p)) for f, p in images.items()}
@@ -1557,8 +1580,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
             for span in markdown.parse(section.text):
                 self._insert_span(span)
             self.buffer.insert(self.buffer.get_end_iter(), "\n")
-        if adj is not None:
-            GLib.idle_add(lambda: adj.set_value(keep) and False)
+        if adj is not None:  # the scroller may be rebuilt or gone by then: look it up again when the idle runs
+            GLib.idle_add(self._restore_scroll, keep)
         self._mark_current_section()
 
     def _insert_span(self, span: markdown.Span) -> None:
@@ -1630,7 +1653,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.dirty = False
 
     def _restore_scroll(self, value: float) -> bool:
-        if self.scroller is not None:  # not in the drawing layout, or with the notes hidden
+        if self._alive and self.scroller is not None:  # not in the drawing layout, or with the notes hidden
             self.scroller.get_vadjustment().set_value(value)
         return False
 

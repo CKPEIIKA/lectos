@@ -78,6 +78,21 @@ def test_stage_board_uses_board_layer_and_size() -> None:
     assert close(pixel(surface, 160, 90), tuple(round(c * 255) for c in BOARD_STYLES["chalk"].bg))  # ty: ignore[invalid-argument-type]
 
 
+def test_an_area_squeezed_to_nothing_paints_nothing_and_never_breaks_cairo() -> None:
+    deck = Deck(3)
+    stage = Stage(FakeDoc(), deck, Ink())
+    _surface, cr = surface_and_context(10, 10)
+    for board in (False, True):
+        deck.board = board
+        for size in ((0, 0), (0, 50), (50, 0), (-5, 20)):
+            scale, _x, _y = stage.draw(cr, 0, *size)
+            assert scale > 0
+            stage.to_layer(0, *size, 5.0, 5.0)  # pointer events there divide by the scale: must not raise
+    assert render.fit(400, 300, 0, 0)[0] > 0
+    deck.board = True
+    render.draw_board(cr, 0, 0)  # even the board alone survives it
+
+
 def test_stage_coordinate_conversions() -> None:
     stage = Stage(FakeDoc(), Deck(1), Ink())
     scale, ox, _ = stage.fit(0, 200, 100)

@@ -12,11 +12,12 @@ from lectos.model.style import BOARD_STYLES, DEFAULT_BOARD, LaserStyle
 BOARD_SIZE = (1600.0, 900.0)
 ROUND_CAP = cairo.LINE_CAP_ROUND
 PRESSURE_FLOOR = 0.3
+MIN_SCALE = 1e-6
 
 
 def fit(pw: float, ph: float, width: float, height: float) -> tuple[float, float, float]:
     """Return (scale, x offset, y offset) centering a pw x ph page in the area."""
-    scale = min(width / pw, height / ph)
+    scale = max(min(width / pw, height / ph), MIN_SCALE)  # never 0: an area can be squeezed to nothing
     return scale, (width - pw * scale) / 2, (height - ph * scale) / 2
 
 

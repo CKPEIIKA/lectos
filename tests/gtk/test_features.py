@@ -388,13 +388,14 @@ def test_the_launcher_uses_pdf_annotations_as_notes_and_warns_about_zathura(
     current(zathura).finish()
 
 
-def test_a_saved_splitter_position_wider_than_the_window_keeps_the_notes_visible(rig, pump) -> None:
+def test_a_saved_splitter_position_wider_than_the_window_keeps_the_notes_visible(rig, pump, wait_for) -> None:
     c = rig.console
     c.present()
     pump(0.3)
     c._pane["compact"] = 5000  # saved while the window was much wider
     c.layout_mode = "compact"
     c._apply_layout(force=True)
+    assert wait_for(lambda: c.scroller.get_width() > 0)  # allocated at all
     pump(0.3)
     assert c.scroller.get_width() >= 200
 
@@ -425,3 +426,27 @@ def test_the_palette_offers_the_configured_colours_and_follows_the_shape(build_r
     assert bar.shape.get_selected() == 4
     bar.shape.set_selected(1)  # chosen in the palette: runs the command
     assert c.ink.tool.shape == "line"
+
+
+def test_deferred_callbacks_never_touch_a_scroller_that_is_gone(rig, pump) -> None:
+    c = rig.console
+    c.present()
+    pump(0.2)
+    for _ in range(5):
+        c._rebuild_notes()  # queues a scroll restore for the notes view ...
+        c.execute("layout draw")  # ... which is destroyed before the idle runs
+        c.execute("layout compact")
+        c.execute("layout draw")
+    pump(0.3)
+    c._rebuild_notes()
+    c._on_resized()
+    c._math_ready({}, c._notes_generation)
+    c.destroy()
+    pump(0.1)
+    assert c._alive is False
+    assert c._after_resize() is False
+    assert c._after_layout(0.0) is False
+    assert c._restore_scroll(1.0) is False
+    assert c._math_ready({}, c._notes_generation) is False
+    assert c._recompile_math() is False
+    pump(0.3)

@@ -54,6 +54,8 @@ class Stage:
 
     def draw(self, cr: cairo.Context, page: int, width: int, height: int) -> tuple[float, float, float]:
         """Paint the shown content with its ink and the laser dot; return the fit used."""
+        if width <= 0 or height <= 0:  # an area squeezed to nothing has nothing to paint
+            return self.fit(page, 1, 1)
         fit = (
             render.draw_board(cr, width, height, self.deck.board_style)
             if self.deck.board
