@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import faulthandler
 import hashlib
 import json
 import os
 import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from lectos.paths import write_atomic
@@ -13,6 +16,7 @@ from lectos.paths import write_atomic
 MAX_STATE_BYTES = 16 * 1024
 MAX_INK_BYTES = 8 * 1024 * 1024
 LAST_FOLDER_FILE = "last-folder.txt"
+CRASH_LOG_FILE = "crash.log"
 
 
 def _root() -> Path:
@@ -24,6 +28,24 @@ def state_path(pdf: Path, kind: str = "") -> Path:
     root = _root()
     digest = hashlib.sha256(str(pdf.resolve()).encode()).hexdigest()[:16]
     return root / (f"{digest}.{kind}.json" if kind else f"{digest}.json")
+
+
+@contextmanager
+def crash_log() -> Iterator[None]:
+    """While active, a fatal signal (segmentation fault, abort) writes the Python traceback to ``crash.log``."""
+    try:
+        path = _root() / CRASH_LOG_FILE
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = path.open("a", encoding="utf-8")
+    except OSError:
+        yield  # a diagnostic only: never block starting
+        return
+    with handle:
+        faulthandler.enable(handle)
+        try:
+            yield
+        finally:
+            faulthandler.disable()
 
 
 def last_folder() -> Path | None:

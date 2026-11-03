@@ -250,7 +250,8 @@ def run(
     register_icons()
     Gtk.Window.set_default_icon_name(CONSOLE_ICON)
     app.connect("activate", lambda _a: launcher.show_start() if pdf is None else launcher.begin(pdf, notes))
-    status = app.run([sys.argv[0]])
+    with state.crash_log():
+        status = app.run([sys.argv[0]])
     if launcher.failure:
         print(f"lectos: {launcher.failure[0]}", file=sys.stderr)
         return 1

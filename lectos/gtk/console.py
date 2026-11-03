@@ -499,15 +499,14 @@ class ConsoleWindow(Adw.ApplicationWindow):
         menu.append_section(None, section(
             item(tr("Previous slide"), "prev", "h"), item(tr("Next slide"), "next", "l"),
             item(tr("Go to slide…"), "goto-prompt", "colon"), item(tr("Overview"), "overview", "o"),
-            item(tr("Search"), "search", "slash"),
+            item(tr("Search"), "search", "slash"), item(tr("Quick drawing layout"), "sketch", "s"),
         ))  # fmt: skip
         menu.append_section(tr("Audience"), section(
             item(tr("Freeze"), "freeze", "z"), item(tr("Blackout"), "blackout", "b"),
             item(tr("Chalkboard"), "board", "<Shift>b"), item(tr("Projector fullscreen"), "projector-fullscreen", "f"),
         ))  # fmt: skip
         view.append_section(None, section(
-            radios("layout"), radios("upcoming"), item(tr("Quick drawing layout"), "sketch", "s"),
-            item(tr("Console fullscreen"), "fullscreen", "<Shift>f"),
+            radios("layout"), radios("upcoming"), item(tr("Console fullscreen"), "fullscreen", "<Shift>f"),
         ))  # fmt: skip
         view.append_section(None, section(item(tr("Vim keys"), "vim"), item(tr("Show slide for note hits"), "show-slide")))
         menu.append_section(tr("Tools"), section(

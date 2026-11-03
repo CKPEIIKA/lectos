@@ -77,3 +77,23 @@ def test_remembering_a_folder_never_fails_the_caller(tmp_path: Path, monkeypatch
     monkeypatch.setenv("XDG_STATE_HOME", str(blocked))
     state.remember_folder(tmp_path)
     assert state.last_folder() is None
+
+
+def test_the_crash_log_is_armed_only_while_running(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import faulthandler
+
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    with state.crash_log():
+        assert faulthandler.is_enabled()
+    assert not faulthandler.is_enabled()
+    assert (tmp_path / "state" / "lectos" / "crash.log").is_file()
+
+
+def test_an_unwritable_state_folder_does_not_stop_the_crash_log_context(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    blocked = tmp_path / "state"
+    blocked.write_text("a file where the folder should be")
+    monkeypatch.setenv("XDG_STATE_HOME", str(blocked))
+    with state.crash_log():
+        pass
