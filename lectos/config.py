@@ -94,6 +94,7 @@ class Options:
     previous: int = layouts.DEFAULT_PREVIOUS
     upcoming: int = layouts.DEFAULT_UPCOMING
     notes_pages: str = "auto"  # where Beamer's second-screen notes sit on a page: auto none left right
+    menubar: bool = False  # show the File ... Help menu bar at startup; Alt toggles it
     notes_names: tuple[str, ...] = ()  # extra notes file names looked for next to the slides ([files] notes_names)
     hidden: tuple[str, ...] = ()  # console panels hidden at startup: notes audience next strip status
     language: str = "auto"  # "auto" reads the environment, or "en" / "ru"
@@ -283,7 +284,9 @@ def parse(data: dict[str, object], base: Path) -> Options:
     if unknown:
         raise ConfigError(f"unknown section [{unknown[0]}]")
     black = _section(data, "blackout", {"image", "text", "background", "text_color"})
-    console = _section(data, "console", {"vim", "target_min", "layout", "previous", "upcoming", "hide", "notes_pages"})
+    console = _section(
+        data, "console", {"vim", "target_min", "layout", "previous", "upcoming", "hide", "notes_pages", "menubar"}
+    )
     head = _section(data, "header", {"start", "title", "end"})
     draw = _section(data, "drawing", {"color", "width", "highlighter_alpha", "eraser_radius", "smoothing", "board"})
     pointer = _section(data, "laser", {"color", "size", "style", "halo"})
@@ -307,6 +310,7 @@ def parse(data: dict[str, object], base: Path) -> Options:
         upcoming=_count(console, "upcoming", layouts.DEFAULT_UPCOMING, layouts.MAX_UPCOMING),
         hidden=_hidden(console),
         notes_pages=_notes_pages(console),
+        menubar=_typed(console, "menubar", bool, Options.menubar, "[console] "),
         notes_names=_notes_names(files),
         language=_choice(ui, "language", ("auto", *i18n.LANGUAGES)) or "auto",
         console=_choice(ui, "console", CONSOLES),

@@ -45,6 +45,7 @@ SMALL_H = 130
 WIDE_ROW_H = 220
 WIDE_SLIDE_SHARE = 0.58
 PANE_TOLERANCE_PX = 8
+ALT_KEYS = (Gdk.KEY_Alt_L, Gdk.KEY_Alt_R)
 NOTES_MIN_PX = 240  # the notes pane never shrinks below this, whatever splitter position was saved
 TOAST_S = 3
 RESIZE_DEBOUNCE_MS = 120
@@ -121,6 +122,29 @@ TAGS = {
 }
 
 
+def _menu_section(*entries: Gio.MenuItem | tuple[str, Gio.Menu]) -> Gio.Menu:
+    menu = Gio.Menu()
+    for entry in entries:
+        if isinstance(entry, tuple):
+            menu.append_submenu(*entry)
+        else:
+            menu.append_item(entry)
+    return menu
+
+
+def _menu_radios(action: str) -> tuple[str, Gio.Menu]:
+    title, choices = RADIO_MENUS[action]
+    items = (Gio.MenuItem.new(tr(label).format(n=value), f"win.{action}::{value}") for label, value in choices)
+    return tr(title), _menu_section(*items)
+
+
+def _menu_inline(menu: Gio.Menu, *action_names: str) -> None:
+    for action in action_names:  # radio choices shown directly under a heading
+        title, choices = RADIO_MENUS[action]
+        items = (Gio.MenuItem.new(tr(label).format(n=value), f"win.{action}::{value}") for label, value in choices)
+        menu.append_section(tr(title), _menu_section(*items))
+
+
 class ConsoleWindow(Adw.ApplicationWindow):
     """The presenter's window. Owns the timer, notes view, and the keyboard."""
 
@@ -152,6 +176,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.layout_active = layouts.COMPACT
         self.previous, self.upcoming = options.previous, options.upcoming
         self.hidden = set(options.hidden)
+        self._alt_alone = False
         self.opener: Callable[[], None] | None = None  # set by the application: choose other slides
         self.on_replace_slides: Callable[[Path], None] | None = None
         self.hits: list[search.Hit] = []
@@ -218,6 +243,9 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.toasts = Adw.ToastOverlay(child=content)
         toolbar = Adw.ToolbarView(content=self.toasts)
         toolbar.add_top_bar(self._build_header(options.header))
+        self.menubar = Gtk.PopoverMenuBar.new_from_model(self._menu_model(bar=True))
+        self.menubar.set_visible(options.menubar)  # Alt shows and hides it
+        toolbar.add_top_bar(self.menubar)
         toolbar.add_bottom_bar(self._build_footer())
         self._apply_status_visibility()
         self.set_content(toolbar)
@@ -226,6 +254,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.add_controller(drop)
         keys = Gtk.EventControllerKey(propagation_phase=Gtk.PropagationPhase.CAPTURE)
         keys.connect("key-pressed", self._on_key)
+        keys.connect("key-released", self._on_key_released)
         self.add_controller(keys)
         for prop in ("default-width", "fullscreened", "maximized"):
             self.connect(f"notify::{prop}", self._on_resized)
@@ -372,6 +401,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             "draw": tool.mouse_draw, "eraser": tool.eraser, "highlighter": tool.highlighter,
             "projector-fullscreen": self.projector.is_fullscreen(), "fullscreen": self.is_fullscreen(),
             "vim": self.vim_on, "show-slide": self.show_slide_on, "sketch": self.layout_active == layouts.DRAW,
+            "menubar": self.menubar.get_visible(),
         }[name]  # fmt: skip
 
     def _radio_value(self, name: str) -> str:
@@ -387,11 +417,11 @@ class ConsoleWindow(Adw.ApplicationWindow):
     def _install_actions(self) -> None:
         plain = (
             "timer", "timer-reset", "undo", "redo", "clear", "clear-all", "restore-all", "export",
-            "overview", "search", "prev", "next", "help", "settings", "edit", "open", "export-ink",
+            "overview", "search", "prev", "next", "help", "settings", "edit", "open", "export-ink", "quit",
         )  # fmt: skip
         flags = (
             "freeze", "blackout", "board", "laser", "draw", "eraser", "highlighter",
-            "projector-fullscreen", "fullscreen", "vim", "show-slide", "sketch",
+            "projector-fullscreen", "fullscreen", "vim", "show-slide", "sketch", "menubar",
         )  # fmt: skip
         for name in plain:
             action = Gio.SimpleAction.new(name, None)
@@ -447,76 +477,95 @@ class ConsoleWindow(Adw.ApplicationWindow):
             item.set_attribute_value("accel", GLib.Variant.new_string(accel))  # display only: shown as a key hint
         return item
 
-    def _menu_model(self) -> Gio.Menu:
-        """The main menu: everyday actions inline, the rest grouped in submenus."""
+    def _menu_model(self, *, bar: bool = False) -> Gio.Menu:
+        """The main menu: everyday actions inline, the rest grouped in submenus. ``bar`` gives the classic menu bar."""
+        timer, drawing, laser, view = self._tool_menus()
+        if bar:
+            return self._menubar_from(timer, drawing, laser, view)
+        return self._popup_from(timer, drawing, laser, view)
 
-        def section(*entries: Gio.MenuItem | tuple[str, Gio.Menu]) -> Gio.Menu:
-            menu = Gio.Menu()
-            for entry in entries:
-                if isinstance(entry, tuple):
-                    menu.append_submenu(*entry)
-                else:
-                    menu.append_item(entry)
-            return menu
-
-        def radios(action: str) -> tuple[str, Gio.Menu]:
-            title, choices = RADIO_MENUS[action]
-            items = (Gio.MenuItem.new(tr(label).format(n=value), f"win.{action}::{value}") for label, value in choices)
-            return tr(title), section(*items)
-
-        def inline(menu: Gio.Menu, *action_names: str) -> None:
-            for action in action_names:  # radio choices shown directly under a heading
-                title, choices = RADIO_MENUS[action]
-                items = (
-                    Gio.MenuItem.new(tr(label).format(n=value), f"win.{action}::{value}") for label, value in choices
-                )
-                menu.append_section(tr(title), section(*items))
-
+    def _tool_menus(self) -> tuple[Gio.Menu, Gio.Menu, Gio.Menu, Gio.Menu]:
+        """The Timer, Drawing, Laser pointer and View submenus, shared by the popup menu and the menu bar."""
         item = self._menu_item
         timer, drawing, laser, view = Gio.Menu(), Gio.Menu(), Gio.Menu(), Gio.Menu()
-        timer.append_section(None, section(
+        timer.append_section(None, _menu_section(
             item(tr("Start or pause"), "timer", "t"), item(tr("Reset"), "timer-reset"),
         ))  # fmt: skip
-        timer.append_section(None, section(radios("target"), item(tr("Custom length…"), "target-prompt")))
-        drawing.append_section(None, section(
+        timer.append_section(None, _menu_section(_menu_radios("target"), item(tr("Custom length…"), "target-prompt")))
+        drawing.append_section(None, _menu_section(
             item(tr("Mouse drawing"), "draw", "d"), item(tr("Eraser"), "eraser", "e"),
             item(tr("Highlighter"), "highlighter"),
         ))  # fmt: skip
-        drawing.append_section(None, section(
-            radios("color"), radios("width"), radios("smooth"), radios("eraser-size"), radios("board-style"),
+        drawing.append_section(None, _menu_section(
+            _menu_radios("color"), _menu_radios("width"), _menu_radios("smooth"),
+            _menu_radios("eraser-size"), _menu_radios("board-style"),
         ))  # fmt: skip
-        drawing.append_section(None, section(
+        drawing.append_section(None, _menu_section(
             item(tr("Undo"), "undo", "u"), item(tr("Redo"), "redo", "<Shift>u"), item(tr("Clear slide ink"), "clear"),
             item(tr("Erase all ink"), "clear-all"), item(tr("Restore erased ink"), "restore-all"),
         ))  # fmt: skip
-        drawing.append_section(None, section(
+        drawing.append_section(None, _menu_section(
             item(tr("Export annotated PDF"), "export"), item(tr("Export this drawing layer (PNG)"), "export-ink"),
         ))  # fmt: skip
-        laser.append_section(None, section(item(tr("Laser pointer"), "laser", "p")))
-        inline(laser, "laser-color", "laser-size", "laser-style")
+        laser.append_section(None, _menu_section(item(tr("Laser pointer"), "laser", "p")))
+        _menu_inline(laser, "laser-color", "laser-size", "laser-style")
 
+        view.append_section(None, _menu_section(
+            _menu_radios("layout"), _menu_radios("upcoming"), item(tr("Console fullscreen"), "fullscreen", "<Shift>f"),
+        ))  # fmt: skip
+        view.append_section(None, _menu_section(
+            item(tr("Vim keys"), "vim"), item(tr("Show slide for note hits"), "show-slide"),
+            item(tr("Menu bar"), "menubar"),
+        ))  # fmt: skip
+        return timer, drawing, laser, view
+
+    def _popup_from(self, timer: Gio.Menu, drawing: Gio.Menu, laser: Gio.Menu, view: Gio.Menu) -> Gio.Menu:
+        item = self._menu_item
         menu = Gio.Menu()
-        menu.append_section(None, section(
+        menu.append_section(None, _menu_section(
             item(tr("Previous slide"), "prev", "h"), item(tr("Next slide"), "next", "l"),
             item(tr("Go to slide…"), "goto-prompt", "colon"), item(tr("Overview"), "overview", "o"),
             item(tr("Search"), "search", "slash"), item(tr("Quick drawing layout"), "sketch", "s"),
         ))  # fmt: skip
-        menu.append_section(tr("Audience"), section(
+        menu.append_section(tr("Audience"), _menu_section(
             item(tr("Freeze"), "freeze", "z"), item(tr("Blackout"), "blackout", "b"),
             item(tr("Chalkboard"), "board", "<Shift>b"), item(tr("Projector fullscreen"), "projector-fullscreen", "f"),
         ))  # fmt: skip
-        view.append_section(None, section(
-            radios("layout"), radios("upcoming"), item(tr("Console fullscreen"), "fullscreen", "<Shift>f"),
-        ))  # fmt: skip
-        view.append_section(None, section(item(tr("Vim keys"), "vim"), item(tr("Show slide for note hits"), "show-slide")))
-        menu.append_section(tr("Tools"), section(
+        menu.append_section(tr("Tools"), _menu_section(
             (tr("Timer"), timer), (tr("Drawing"), drawing), (tr("Laser pointer"), laser), (tr("View"), view),
         ))  # fmt: skip
-        menu.append_section(None, section(
+        menu.append_section(None, _menu_section(
             item(tr("Edit notes of this slide…"), "edit", "<Shift>e"), item(tr("Open other slides…"), "open"),
             item(tr("Settings…"), "settings", "<Shift>s"), item(tr("Help and shortcuts"), "help", "question"),
         ))  # fmt: skip
         return menu
+
+    def _menubar_from(self, timer: Gio.Menu, drawing: Gio.Menu, laser: Gio.Menu, view: Gio.Menu) -> Gio.Menu:
+        """File, Go, Audience, Tools, View and Help, built from the same items as the popup menu."""
+        item = self._menu_item
+        bar = Gio.Menu()
+        file = _menu_section(
+            item(tr("Open other slides…"), "open"), item(tr("Settings…"), "settings", "<Shift>s"),
+            item(tr("Export annotated PDF"), "export"), item(tr("Export this drawing layer (PNG)"), "export-ink"),
+            item(tr("Quit"), "quit"),
+        )  # fmt: skip
+        go = _menu_section(
+            item(tr("Previous slide"), "prev", "h"), item(tr("Next slide"), "next", "l"),
+            item(tr("Go to slide…"), "goto-prompt", "colon"), item(tr("Overview"), "overview", "o"),
+            item(tr("Search"), "search", "slash"), item(tr("Quick drawing layout"), "sketch", "s"),
+            item(tr("Edit notes of this slide…"), "edit", "<Shift>e"),
+        )  # fmt: skip
+        audience = _menu_section(
+            item(tr("Freeze"), "freeze", "z"), item(tr("Blackout"), "blackout", "b"),
+            item(tr("Chalkboard"), "board", "<Shift>b"), item(tr("Projector fullscreen"), "projector-fullscreen", "f"),
+        )  # fmt: skip
+        tools = _menu_section((tr("Timer"), timer), (tr("Drawing"), drawing), (tr("Laser pointer"), laser))
+        for title, menu in (
+            (tr("File"), file), (tr("Go"), go), (tr("Audience"), audience), (tr("Tools"), tools), (tr("View"), view),
+            (tr("Help"), _menu_section(item(tr("Help and shortcuts"), "help", "question"))),
+        ):  # fmt: skip
+            bar.append_submenu(title, menu)
+        return bar
 
     def _build_footer(self) -> Gtk.Box:
         self.cmd = Gtk.Entry(visible=False, placeholder_text=tr(":command  (Tab, :help)"), width_chars=22)
@@ -1079,6 +1128,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             "settings": lambda _a: self._cmd_settings(),
             "edit": lambda _a: self._cmd_edit(),
             "open": lambda _a: self._cmd_open(),
+            "menubar": lambda a: self._cmd_menubar(c.flag(a, self.menubar.get_visible())),
             "sketch": lambda a: self._cmd_sketch(c.flag(a, self.layout_active == layouts.DRAW)),
             "help": self._cmd_help,
             "quit": lambda _a: self.close(),
@@ -1113,6 +1163,10 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._apply_layout()
         self._sync_actions()
         self._mark_dirty()
+
+    def _cmd_menubar(self, on: bool) -> None:
+        self.menubar.set_visible(on)
+        self._sync_actions()
 
     def _cmd_sketch(self, on: bool) -> None:
         if on != (self.layout_active == layouts.DRAW):
@@ -1362,7 +1416,13 @@ class ConsoleWindow(Adw.ApplicationWindow):
         """Show a message to the presenter."""
         self._set_status(message)
 
+    def _on_key_released(self, _c: Gtk.EventControllerKey, keyval: int, _code: int, _state: Gdk.ModifierType) -> None:
+        """Alt pressed and released on its own shows or hides the menu bar."""
+        if keyval in ALT_KEYS and self._alt_alone:
+            self.execute("menubar")
+
     def _on_key(self, _c: Gtk.EventControllerKey, keyval: int, _code: int, state: Gdk.ModifierType) -> bool:
+        self._alt_alone = keyval in ALT_KEYS
         if keyval == Gdk.KEY_Escape:
             self.vim.reset()
             self.show_main()

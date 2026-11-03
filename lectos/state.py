@@ -7,7 +7,7 @@ import hashlib
 import json
 import os
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -31,7 +31,7 @@ def state_path(pdf: Path, kind: str = "") -> Path:
 
 
 @contextmanager
-def crash_log() -> Iterator[None]:
+def crash_log() -> Generator[None]:
     """While active, a fatal signal (segmentation fault, abort) writes the Python traceback to ``crash.log``."""
     try:
         path = _root() / CRASH_LOG_FILE

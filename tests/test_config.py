@@ -201,3 +201,8 @@ def test_extra_notes_names_are_file_names_from_the_files_section(tmp_path: Path)
     ):
         with pytest.raises(ConfigError, match=message):
             config.load(write(tmp_path, text))
+
+
+def test_the_menu_bar_can_start_visible(tmp_path: Path) -> None:
+    assert Options().menubar is False
+    assert config.load(write(tmp_path, "[console]\nmenubar = true\n")).menubar is True

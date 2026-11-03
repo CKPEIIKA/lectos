@@ -901,3 +901,21 @@ msgstr "Заменить {old} на {new}?"
 
 msgid "Use {new} as the notes?"
 msgstr "Использовать {new} как заметки?"
+
+msgid "File"
+msgstr "Файл"
+
+msgid "Go"
+msgstr "Переход"
+
+msgid "Help"
+msgstr "Справка"
+
+msgid "Menu bar"
+msgstr "Строка меню"
+
+msgid "Quit"
+msgstr "Выход"
+
+msgid "Show or hide the menu bar (pressing Alt does the same)."
+msgstr "Показать или скрыть строку меню (то же делает клавиша Alt)."

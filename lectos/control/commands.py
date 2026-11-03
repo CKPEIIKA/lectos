@@ -172,6 +172,7 @@ HELP = {
         noop("View"),
     ),
     "settings": Help("settings", noop("Open the settings window."), noop("View")),
+    "menubar": Help("menubar [on|off]", noop("Show or hide the menu bar (pressing Alt does the same)."), noop("View")),
     "vim": Help("vim [on|off]", noop("Vim-style keys in the GTK console."), noop("View")),
     "open": Help("open", noop("Choose other slides, notes or a folder."), noop("General")),
     "help": Help("help [COMMAND]", noop("List every command with usage and keys, or describe one."), noop("General")),

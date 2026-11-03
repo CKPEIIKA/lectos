@@ -67,6 +67,33 @@ def test_every_menu_entry_points_at_a_registered_action(console) -> None:
         assert console.lookup_action(name) is not None, f"{label!r} -> {detailed}"
 
 
+def test_the_menu_bar_offers_the_same_actions_under_file_to_help(console) -> None:
+    bar = console._menu_model(bar=True)
+    titles = [bar.get_item_attribute_value(i, "label").get_string() for i in range(bar.get_n_items())]
+    assert titles == ["File", "Go", "Audience", "Tools", "View", "Help"]
+    entries = list(walk(bar))
+    assert any(detailed == "win.quit" for _label, detailed in entries)
+    for label, detailed in entries:
+        name = detailed.removeprefix("win.").split("::")[0]
+        assert console.lookup_action(name) is not None, f"{label!r} -> {detailed}"
+
+
+def test_alt_alone_shows_and_hides_the_menu_bar_but_alt_chords_do_not(console) -> None:
+    assert console.menubar.get_visible() is False
+    alt = Gdk.KEY_Alt_L
+    console._on_key(None, alt, 0, Gdk.ModifierType.ALT_MASK)
+    console._on_key_released(None, alt, 0, Gdk.ModifierType(0))
+    assert console.menubar.get_visible() is True
+    console.execute("menubar")
+    assert console.menubar.get_visible() is False
+    console._on_key(None, alt, 0, Gdk.ModifierType.ALT_MASK)
+    console._on_key(None, Gdk.KEY_f, 0, Gdk.ModifierType.ALT_MASK)  # Alt+F: a chord, not a bare Alt
+    console._on_key_released(None, alt, 0, Gdk.ModifierType(0))
+    assert console.menubar.get_visible() is False
+    console.execute("menubar on")
+    assert console.lookup_action("menubar").get_state().get_boolean() is True
+
+
 def test_every_console_command_is_documented(console) -> None:
     assert set(console._commands) <= set(commands.HELP)
 

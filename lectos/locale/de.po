@@ -901,3 +901,21 @@ msgstr "{old} durch {new} ersetzen?"
 
 msgid "Use {new} as the notes?"
 msgstr "{new} als Notizen verwenden?"
+
+msgid "File"
+msgstr "Datei"
+
+msgid "Go"
+msgstr "Gehe zu"
+
+msgid "Help"
+msgstr "Hilfe"
+
+msgid "Menu bar"
+msgstr "Menüleiste"
+
+msgid "Quit"
+msgstr "Beenden"
+
+msgid "Show or hide the menu bar (pressing Alt does the same)."
+msgstr "Menüleiste ein- oder ausblenden (die Alt-Taste tut dasselbe)."

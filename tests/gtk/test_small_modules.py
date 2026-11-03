@@ -351,7 +351,9 @@ def test_the_launcher_switches_to_other_slides_and_a_failing_projector_ends_it(r
     seen = []
     real_start = app_module.StartWindow
     monkeypatch.setattr(
-        app_module, "StartWindow", lambda app, on_start, names: seen.append(real_start(app, on_start, names)) or seen[-1]
+        app_module,
+        "StartWindow",
+        lambda app, on_start, names: seen.append(real_start(app, on_start, names)) or seen[-1],
     )
     launcher.show_start()
     assert (seen[0].slides, seen[0].notes) == (PDF, None)  # starts from what is open now
