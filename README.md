@@ -38,8 +38,15 @@ Install from GitHub with `pipx`:
 pipx install --python python3.13 --system-site-packages "lectos @ git+https://github.com/CKPEIIKA/lectos.git"
 ```
 
-PyGObject and Poppler come from the system, so keep `--system-site-packages` enabled. For a source checkout, install
-`uv` and run:
+PyGObject and Poppler come from the system, so keep `--system-site-packages` enabled. From a local checkout, one
+command installs `lectos` and `lectos-tui` into `~/.local/bin` and the man pages for the user (run it again after
+`git pull` to update; needs `pipx`):
+
+```bash
+./scripts/install.sh
+```
+
+For development, install `uv` and run:
 
 ```bash
 git clone https://github.com/CKPEIIKA/lectos.git
