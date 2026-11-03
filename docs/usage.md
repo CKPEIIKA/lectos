@@ -65,6 +65,8 @@ Drawing, laser and chalkboard: draw on the large preview in the console with a p
 - chalkboard: `board`, `board-style chalk|black|white|ruled|grid`
 - laser: `laser` (the dot follows the pointer over the large preview and shows on the projector), `laser-color`, `laser-size 3..30`, `laser-style dot|ring|cross`
 
+The **pen palette** (colour swatches, shape drop-down, width slider and drawing buttons) sits under the slide in every layout. `panel palette off` (or Settings, or `[console] hide = ["palette"]`) removes it outside the drawing layout, and `[drawing] palette = ["red", "blue", "black"]` chooses and orders its colours (names from the pen colours).
+
 Keys: `d`, `e`, `u`, `U`, `B`, `p`. Ink is saved in `$XDG_STATE_HOME/lectos/` next to the recovery state and restored on restart; it is tied to page numbers, so recompiling a deck with moved slides moves the ink with the numbers, not the content.
 
 In the projector window: `f`/F11 fullscreen, `b` blackout, `c` clear ink on the shown layer, Escape leaves fullscreen, and a pen or `draw on` mouse also draws there.

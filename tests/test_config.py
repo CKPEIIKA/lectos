@@ -213,3 +213,18 @@ def test_the_default_shape_is_validated(tmp_path: Path) -> None:
     assert config.load(write(tmp_path, '[drawing]\nshape = "arrow"\n')).drawing.shape == "arrow"
     with pytest.raises(ConfigError, match="shape must be one of"):
         config.load(write(tmp_path, '[drawing]\nshape = "star"\n'))
+
+
+def test_the_palette_is_a_list_of_known_colour_names(tmp_path: Path) -> None:
+    assert Options().drawing.palette == ("red", "yellow", "green", "blue", "white", "black")
+    assert config.load(write(tmp_path, '[drawing]\npalette = ["blue", "red", "blue"]\n')).drawing.palette == (
+        "blue",
+        "red",
+    )
+    for text, message in (
+        ("[drawing]\npalette = []\n", "non-empty list"),
+        ('[drawing]\npalette = "red"\n', "non-empty list"),
+        ('[drawing]\npalette = ["pink"]\n', "unknown colour"),
+    ):
+        with pytest.raises(ConfigError, match=message):
+            config.load(write(tmp_path, text))

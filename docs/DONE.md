@@ -2,7 +2,9 @@
 
 Completed work only. Record meaningful outcomes and validation evidence, newest first.
 
-## 2026-11-03: shape tools
+## 2026-11-03: shape tools and pen palette
+
+- The drawing toolbar (colour swatches, shape drop-down, width slider, buttons) is a console panel `palette` shown under the slide in every layout; hide it with `panel palette off`, Settings or `hide`; `[drawing] palette` picks the colours.
 
 - `shape freehand|line|arrow|rect|ellipse` in both consoles (GTK Drawing menu, `:shape`, `[drawing] shape`); shapes are stored as two end points, saved with the ink (`"s"` key; old files load unchanged), drawn through one outline function shared by the stage, export and the eraser. The eraser now measures distance to the stroke's segments, not only its points.
 - 505 tests, 100% coverage, ruff and ty clean.

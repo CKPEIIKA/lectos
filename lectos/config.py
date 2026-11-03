@@ -14,6 +14,7 @@ from lectos.model import layout as layouts
 from lectos.model import style
 from lectos.model.deck import MAX_TARGET_MIN, parse_minutes
 from lectos.model.ink import (
+    COLORS,
     FREEHAND,
     MAX_ERASER_RADIUS,
     MAX_HIGHLIGHT_ALPHA,
@@ -70,6 +71,7 @@ class Drawing:
     eraser_radius: float = 14.0
     smoothing: int = 0
     shape: str = FREEHAND
+    palette: tuple[str, ...] = tuple(COLORS)  # pen colour names offered in the palette, in this order
     board: str = style.DEFAULT_BOARD
 
 
@@ -230,6 +232,16 @@ def _number_option(
     return value
 
 
+def _palette(section: dict[str, object]) -> tuple[str, ...]:
+    raw = section.get("palette", list(Drawing.palette))
+    if not isinstance(raw, list) or not raw or not all(isinstance(i, str) for i in raw):
+        raise ConfigError("[drawing] palette must be a non-empty list of colour names")
+    bad = [i for i in raw if i not in COLORS]
+    if bad:
+        raise ConfigError(f"[drawing] palette: unknown colour {bad[0]!r} (known: {', '.join(COLORS)})")
+    return tuple(dict.fromkeys(raw))
+
+
 def _drawing(section: dict[str, object]) -> Drawing:
     where = "[drawing] "
     base = Drawing()
@@ -241,6 +253,7 @@ def _drawing(section: dict[str, object]) -> Drawing:
     if shape not in SHAPES:
         raise ConfigError(f"{where}shape must be one of {', '.join(SHAPES)}")
     return Drawing(
+        palette=_palette(section),
         color=_color_option(section, "color", base.color, where),
         width=width,
         highlighter_alpha=_number_option(
@@ -296,7 +309,9 @@ def parse(data: dict[str, object], base: Path) -> Options:
     )
     head = _section(data, "header", {"start", "title", "end"})
     draw = _section(
-        data, "drawing", {"color", "width", "highlighter_alpha", "eraser_radius", "smoothing", "shape", "board"}
+        data,
+        "drawing",
+        {"color", "width", "highlighter_alpha", "eraser_radius", "smoothing", "shape", "palette", "board"},
     )
     pointer = _section(data, "laser", {"color", "size", "style", "halo"})
     files = _section(data, "files", {"notes_names"})

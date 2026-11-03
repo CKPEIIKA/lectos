@@ -943,3 +943,6 @@ msgstr "Ellipse"
 
 msgid "What a drag draws: freehand, line, arrow, rect or ellipse (configurable as [drawing] shape)."
 msgstr "Was beim Ziehen gezeichnet wird: freehand, line, arrow, rect oder ellipse (einstellbar als [drawing] shape)."
+
+msgid "Pen palette"
+msgstr "Stiftpalette"

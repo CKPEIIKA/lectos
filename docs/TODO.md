@@ -5,7 +5,7 @@ Unfinished work only. Keep tasks concrete, prioritized, and verifiable. Move com
 ## P0: Xournal++/pympress-style conveniences (each one configurable in `options.toml` and, where it is a console setting, in Settings)
 
 - [x] Shape tools: line, arrow, rectangle, ellipse (`shape`, `[drawing] shape`).
-- [ ] Always-visible pen palette: colours, widths, tool buttons (pen, highlighter, eraser, shape) on the main screen; `[console] palette = true|false` and `[drawing] palette = [colours]`.
+- [x] Always-visible pen palette (panel `palette`, `[drawing] palette`). Still open: custom `#rrggbb` swatches.
 - [ ] Text boxes on a slide (`text` tool): placed with a click, stored as ink, exported.
 - [ ] Select, move and delete strokes (`select` tool) with undo.
 - [ ] Zoom/magnifier on the audience screen (`zoom` command, key, `[projector] zoom_factor`).

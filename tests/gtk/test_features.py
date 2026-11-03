@@ -67,6 +67,7 @@ def test_compact_layout_without_previews_is_just_the_slide_and_the_notes(rig) ->
     c = rig.console
     c.execute("panel audience off")
     c.execute("panel next off")
+    c.execute("panel palette off")
     assert c._small_row(130) is None
     assert c.main_holder.get_first_child().get_start_child().get_last_child() is c._stage_areas[0]
     c.execute("panel notes off")
@@ -99,7 +100,7 @@ def test_the_status_bar_can_be_hidden_but_the_command_line_stays(rig) -> None:
 
 def test_an_unknown_panel_lists_the_known_ones(rig) -> None:
     rig.console.execute("panel bogus")
-    assert rig.console.last_message == "panel needs one of: notes audience next strip status"
+    assert rig.console.last_message == "panel needs one of: notes audience next strip status palette"
 
 
 def test_hidden_panels_are_remembered_and_unknown_names_ignored(rig, build_rig) -> None:
@@ -128,7 +129,6 @@ def test_the_drawing_layout_lets_the_mouse_draw_and_gives_it_back(rig) -> None:
     assert c.scroller is None
     c.execute("layout wide")
     assert c.ink.tool.mouse_draw is False
-    assert c._drawbar is None
     c.execute("draw on")
     c.execute("layout draw")
     c.execute("layout compact")
@@ -397,3 +397,31 @@ def test_a_saved_splitter_position_wider_than_the_window_keeps_the_notes_visible
     c._apply_layout(force=True)
     pump(0.3)
     assert c.scroller.get_width() >= 200
+
+
+def test_the_pen_palette_sits_under_the_slide_in_every_layout_and_can_be_hidden(rig) -> None:
+    c = rig.console
+    for mode in ("compact", "wide", "draw"):
+        c.execute(f"layout {mode}")
+        assert c._drawbar is not None, mode
+    c.execute("layout compact")
+    c.execute("panel palette off")
+    assert c._drawbar is None
+    c.execute("layout draw")  # the drawing layout is its own toolbar
+    assert c._drawbar is not None
+    c.execute("panel palette on")
+    assert c.layout_active == "draw"
+
+
+def test_the_palette_offers_the_configured_colours_and_follows_the_shape(build_rig) -> None:
+    from lectos import config
+
+    options = config.Options(drawing=config.Drawing(palette=("red", "blue")))
+    c = build_rig(options=options).console
+    c.execute("layout compact")
+    bar = c._drawbar
+    assert list(bar.swatches) == ["red", "blue"]
+    c.execute("shape ellipse")
+    assert bar.shape.get_selected() == 4
+    bar.shape.set_selected(1)  # chosen in the palette: runs the command
+    assert c.ink.tool.shape == "line"

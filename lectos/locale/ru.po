@@ -943,3 +943,6 @@ msgstr "Эллипс"
 
 msgid "What a drag draws: freehand, line, arrow, rect or ellipse (configurable as [drawing] shape)."
 msgstr "Что рисует перетаскивание: freehand, line, arrow, rect или ellipse (настраивается как [drawing] shape)."
+
+msgid "Pen palette"
+msgstr "Палитра пера"

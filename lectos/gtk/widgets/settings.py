@@ -19,6 +19,7 @@ PANEL_TITLES = {
     "next": noop("Next slide preview"),
     "strip": noop("Filmstrip (wide layout)"),
     "status": noop("Status bar"),
+    "palette": noop("Pen palette"),
 }
 LAYOUT_TITLES = (
     (layouts.AUTO, noop("Automatic")),

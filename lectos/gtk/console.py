@@ -187,6 +187,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.previous, self.upcoming = options.previous, options.upcoming
         self.hidden = set(options.hidden)
         self._alt_alone = False
+        self.palette = options.drawing.palette
         self.opener: Callable[[], None] | None = None  # set by the application: choose other slides
         self.on_replace_slides: Callable[[Path], None] | None = None
         self.hits: list[search.Hit] = []
@@ -711,6 +712,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         """Notebook layout: big preview with audience and next below it, notes on the right."""
         left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, hexpand=True)
         left.append(self._big_preview())
+        self._append_palette(left)
         small = self._small_row(SMALL_H)
         if small is not None:
             left.append(small)
@@ -736,6 +738,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         top.set_vexpand(True)
         column = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         column.append(top)
+        self._append_palette(column)
         if "strip" not in self.hidden:
             self._strip_box = Gtk.Box(
                 spacing=layouts.STRIP_GAP_PX, margin_start=layouts.STRIP_GAP_PX, margin_top=4, margin_bottom=4
@@ -743,10 +746,16 @@ class ConsoleWindow(Adw.ApplicationWindow):
             column.append(Gtk.ScrolledWindow(child=self._strip_box, vscrollbar_policy=Gtk.PolicyType.NEVER))
         return column
 
+    def _append_palette(self, column: Gtk.Box) -> None:
+        """The pen palette under the slide, unless the user hid that panel."""
+        if "palette" not in self.hidden:
+            self._drawbar = DrawBar(self, self.palette)
+            column.append(self._drawbar)
+
     def _build_draw(self) -> Gtk.Widget:
         """Quick drawing: the slide as large as the window allows, with the drawing toolbar underneath."""
         self.view = self.scroller = None
-        self._drawbar = DrawBar(self)
+        self._drawbar = DrawBar(self, self.palette)
         column = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         column.append(self._big_preview())
         column.append(self._drawbar)
@@ -755,6 +764,10 @@ class ConsoleWindow(Adw.ApplicationWindow):
     def pen_color_name(self) -> str:
         """Name of the current pen colour (empty for a custom one)."""
         return self._color_name(self.ink.tool.color)
+
+    def pen_shape(self) -> str:
+        """Current drag shape."""
+        return self.ink.tool.shape
 
     def pen_width(self) -> float:
         """Current pen width."""
@@ -1191,7 +1204,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             return
         show = commands.flag(value.strip(), name not in self.hidden)
         (self.hidden.discard if show else self.hidden.add)(name)
-        if show and self.layout_active == layouts.DRAW and name != "status":
+        if show and self.layout_active == layouts.DRAW and name not in ("status", "palette"):
             self._cmd_layout(self._sketch_prev)  # the drawing layout has no panels: showing one leaves it
         self._apply_status_visibility()
         self._apply_layout(force=True)
