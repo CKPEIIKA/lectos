@@ -1121,6 +1121,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
             return
         show = commands.flag(value.strip(), name not in self.hidden)
         (self.hidden.discard if show else self.hidden.add)(name)
+        if show and self.layout_active == layouts.DRAW and name != "status":
+            self._cmd_layout(self._sketch_prev)  # the drawing layout has no panels: showing one leaves it
         self._apply_status_visibility()
         self._apply_layout(force=True)
         self._sync_actions()

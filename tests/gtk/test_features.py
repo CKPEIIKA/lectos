@@ -52,6 +52,17 @@ def test_panels_can_be_hidden_one_by_one_and_come_back(rig) -> None:
     assert c.hidden == set()
 
 
+def test_showing_the_notes_leaves_the_drawing_layout_which_has_none(rig) -> None:
+    c = rig.console
+    c.execute("layout draw")
+    assert c.scroller is None
+    c.execute("panel status on")  # the status bar exists in every layout
+    assert c.layout_active == "draw"
+    c.execute("panel notes on")
+    assert c.layout_active != "draw"
+    assert c.scroller is not None
+
+
 def test_compact_layout_without_previews_is_just_the_slide_and_the_notes(rig) -> None:
     c = rig.console
     c.execute("panel audience off")
