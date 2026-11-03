@@ -16,6 +16,9 @@ from lectos.i18n import tr
 from lectos.paths import NOTES_SUFFIXES, discover, notes_for
 
 SLIDES_ICON = "lectos"
+ICON_PX = 96
+CONTENT_MAX_PX = 480
+CONTENT_FIT_PX = 720  # tall enough that the default window shows everything without scrolling
 MAX_DROP_FILES = 2
 
 
@@ -24,7 +27,7 @@ class StartWindow(Adw.ApplicationWindow):
 
     def __init__(self, app: Gtk.Application, on_start: Callable[[Path, Path | None], None]) -> None:
         super().__init__(
-            application=app, title=tr("lectos - open a presentation"), default_width=520, default_height=560
+            application=app, title=tr("lectos - open a presentation"), default_width=520, default_height=CONTENT_FIT_PX
         )
         self.on_start = on_start
         self.slides: Path | None = None
@@ -47,20 +50,22 @@ class StartWindow(Adw.ApplicationWindow):
             label=tr("Start"), halign=Gtk.Align.CENTER, sensitive=False, css_classes=["suggested-action", "pill"]
         )
         self.start_button.connect("clicked", lambda _b: self.start())
-        page = Adw.StatusPage(
-            icon_name=SLIDES_ICON,
-            title=tr("Open a presentation"),
-            description=tr(
-                "Choose the PDF slides and, if you have them, the lecture notes (Markdown or Beamer .tex). "
-                "You can also drop a PDF, notes file, or folder here, or press Ctrl+O to choose slides."
-            ),
+        description = tr(
+            "Choose the PDF slides and, if you have them, the lecture notes (Markdown or Beamer .tex). "
+            "You can also drop a PDF, notes file, or folder here, or press Ctrl+O to choose slides."
         )
-        box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=12, margin_start=16, margin_end=16, margin_bottom=16
-        )
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin_top=24, margin_bottom=24)
+        box.append(Gtk.Image(icon_name=SLIDES_ICON, pixel_size=ICON_PX, margin_bottom=6))
+        box.append(Gtk.Label(label=tr("Open a presentation"), css_classes=["title-1"], wrap=True))
+        box.append(Gtk.Label(label=description, wrap=True, justify=Gtk.Justification.CENTER, margin_bottom=12))
         for widget in (group, folder, self.start_button):
             box.append(widget)
-        page.set_child(box)
+        # A scrolled clamp, so the window can be smaller than the content (then it scrolls) and is never forced larger.
+        page = Gtk.ScrolledWindow(
+            child=Adw.Clamp(child=box, maximum_size=CONTENT_MAX_PX, margin_start=16, margin_end=16),
+            hscrollbar_policy=Gtk.PolicyType.NEVER,
+            propagate_natural_height=False,
+        )
         toolbar = Adw.ToolbarView(content=page)
         toolbar.add_top_bar(Adw.HeaderBar())
         self.set_content(toolbar)

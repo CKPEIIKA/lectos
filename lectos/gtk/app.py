@@ -28,6 +28,7 @@ from lectos.model.ink import Ink
 from lectos.model.style import LaserStyle
 from lectos.notes.beamer import open_notes
 from lectos.notes.markdown import NotesSource
+from lectos.paths import notes_for
 from lectos.projectors.projection import GTK_CAPS, NullProjector, Projector, ProjectorSync
 from lectos.projectors.zathura import Zathura
 
@@ -48,12 +49,12 @@ class Core:
     saved: dict[str, object]
 
 
-def build_core(pdf: Path, caps: frozenset[str], options: Options) -> Core:
+def build_core(pdf: Path, caps: frozenset[str], options: Options, *, doc: PdfDoc | None = None) -> Core:
     """Open the PDF and restore saved deck and ink.
 
     Options set the pen and laser defaults; features the projector lacks are switched off.
     """
-    doc = PdfDoc(pdf, options.notes_pages)
+    doc = doc if doc is not None else PdfDoc(pdf, options.notes_pages)
     deck = Deck(doc.pages)
     deck.board_style = options.drawing.board
     saved = state.load(pdf)
@@ -173,6 +174,9 @@ class Launcher:
     def begin(self, pdf: Path, notes: NotesSource | None) -> None:
         """Open the console (and our projector window if chosen) for a deck."""
         core = build_core(pdf, GTK_CAPS if self.kind == "gtk" else frozenset(), self.options)
+        self._present(pdf, core, notes)
+
+    def _present(self, pdf: Path, core: Core, notes: NotesSource | None) -> None:
         try:
             proj = make_projector(
                 self.app, core, self.kind, self.options, pdf, windowed=self.windowed, monitor=self.monitor
@@ -185,6 +189,7 @@ class Launcher:
         self.session = _open_console(self.app, pdf, core, proj, notes=notes, options=self.options)
         console = self.session.console
         console.opener = self.show_start
+        console.on_replace_slides = self.replace_slides
         if core.doc.notes_side and self.kind == "zathura":
             console.say(tr("the PDF has notes pages: Zathura would show them to the audience, use the gtk projector"))
 
@@ -199,6 +204,26 @@ class Launcher:
             self.session = None
         self.begin(pdf, open_notes(notes, pdf) if notes else None)
         start.close()
+
+    def replace_slides(self, pdf: Path) -> None:
+        """Switch the active presentation and load notes found beside the dropped PDF."""
+        session = self.session
+        try:
+            doc = PdfDoc(pdf, self.options.notes_pages)
+        except (GLib.Error, OSError, ValueError) as exc:
+            message = tr("cannot open slides {name}: {error}").format(name=pdf.name, error=exc)
+            if session is not None:
+                session.console.say(message)
+            else:
+                print(f"lectos: {message}", file=sys.stderr)
+            return
+        notes = notes_for(pdf)
+        source = open_notes(notes, pdf) if notes else None
+        if session is not None:
+            session.finish()
+            self.session = None
+        core = build_core(pdf, GTK_CAPS if self.kind == "gtk" else frozenset(), self.options, doc=doc)
+        self._present(pdf, core, source)
 
 
 def run(

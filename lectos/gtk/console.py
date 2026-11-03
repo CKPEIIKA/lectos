@@ -34,8 +34,9 @@ from lectos.model import layout as layouts
 from lectos.model.deck import Timer, format_seconds, parse_minutes, schedule_summary
 from lectos.model.ink import COLORS
 from lectos.notes import markdown, mathimg
+from lectos.notes.beamer import open_notes
 from lectos.notes.markdown import NotesError, NotesSource, Section
-from lectos.paths import unique
+from lectos.paths import NOTES_SUFFIXES, unique
 from lectos.projectors.projection import COMMAND_CAPS, Projector, apply_caps
 
 SCROLL_STEP = 60.0
@@ -151,6 +152,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.previous, self.upcoming = options.previous, options.upcoming
         self.hidden = set(options.hidden)
         self.opener: Callable[[], None] | None = None  # set by the application: choose other slides
+        self.on_replace_slides: Callable[[Path], None] | None = None
         self.hits: list[search.Hit] = []
         self.hit = -1
         self.dirty = False
@@ -177,6 +179,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._sections: list[Section] = []
         self._textures: dict[mathimg.Formula, Gdk.Texture] = {}
         self._notes_mtime = -1
+        self._notes_generation = 0
+        self._drop_dialog: Adw.MessageDialog | None = None
         self._stage_areas: list[Gtk.DrawingArea] = []
         self._plain_areas: list[Gtk.DrawingArea] = []
         self._strip_box: Gtk.Box | None = None
@@ -216,6 +220,9 @@ class ConsoleWindow(Adw.ApplicationWindow):
         toolbar.add_bottom_bar(self._build_footer())
         self._apply_status_visibility()
         self.set_content(toolbar)
+        drop = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
+        drop.connect("drop", self._drop_files)
+        self.add_controller(drop)
         keys = Gtk.EventControllerKey(propagation_phase=Gtk.PropagationPhase.CAPTURE)
         keys.connect("key-pressed", self._on_key)
         self.add_controller(keys)
@@ -1160,6 +1167,89 @@ class ConsoleWindow(Adw.ApplicationWindow):
             return
         self.opener()
 
+    # ---- dropped files ----
+    def _drop_files(self, _target: Gtk.DropTarget, value: object, _x: float, _y: float) -> bool:
+        if not isinstance(value, Gdk.FileList):
+            return False
+        files = value.get_files()
+        if len(files) != 1:
+            return False
+        path = files[0].get_path()
+        return self._handle_dropped_file(Path(path)) if path is not None else False
+
+    def _handle_dropped_file(self, path: Path) -> bool:
+        if not path.is_file():
+            return False
+        suffix = path.suffix.lower()
+        if suffix == ".pdf":
+            self._confirm_drop(path, slides=True)
+        elif suffix in NOTES_SUFFIXES:
+            self._confirm_drop(path, slides=False)
+        else:
+            return False
+        return True
+
+    def _confirm_drop(self, path: Path, *, slides: bool) -> None:
+        if self._drop_dialog is not None:
+            return
+        current = self.doc.path.name if slides else self._notes_name()
+        heading = tr("Replace slides?") if slides else tr("Replace notes?")
+        body = (
+            tr("Replace {old} with {new}?").format(old=current, new=path.name)
+            if current
+            else tr("Use {new} as the notes?").format(new=path.name)
+        )
+        # MessageDialog supports the project's libadwaita 1.4 minimum.
+        dialog = Adw.MessageDialog.new(self, heading, body)
+        dialog.set_modal(True)
+        dialog.add_response("cancel", tr("Cancel"))
+        dialog.add_response("replace", tr("Replace"))
+        dialog.set_response_appearance("replace", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", self._drop_response, path, slides)
+        self._drop_dialog = dialog
+        dialog.present()
+
+    def _notes_name(self) -> str:
+        """File name of the current notes ('' for none, or notes that are not a file, like PDF annotations)."""
+        path = getattr(self.notes, "path", None) or getattr(self.notes, "tex", None)
+        return path.name if path is not None else ""
+
+    def _drop_response(self, dialog: Adw.MessageDialog, response: str, path: Path, slides: bool) -> None:
+        if self._drop_dialog is dialog:
+            self._drop_dialog = None
+        dialog.close()
+        if response != "replace":
+            return
+        if slides:
+            if self.on_replace_slides is None:
+                self._set_status(tr("opening other slides is not available here"))
+                return
+            self.on_replace_slides(path)
+            return
+        self._replace_notes(path)
+
+    def _replace_notes(self, path: Path) -> None:
+        source = open_notes(path, self.doc.path)
+        try:
+            stamp, sections = source.stamp(), source.load()
+        except NotesError as exc:
+            self._set_status(str(exc))
+            return
+        except OSError as exc:
+            self._set_status(tr("cannot read {path}: {error}").format(path=path, error=exc))
+            return
+        self.notes = source
+        self._install_notes(sections, stamp)
+        if self.search_entry.get_text():
+            self._run_search(self.search_entry)
+        else:
+            self.hits = []
+            self.hit = -1
+            self.results.remove_all()
+        self._set_status(tr("notes replaced with {name}").format(name=path.name))
+
     def _cmd_count(self, name: str, arg: str, maximum: int) -> None:
         if not arg.isdigit():
             self._set_status(tr("{name} needs a number 0..{maximum}").format(name=name, maximum=maximum))
@@ -1314,14 +1404,20 @@ class ConsoleWindow(Adw.ApplicationWindow):
             mtime = self.notes.stamp()
             if mtime == self._notes_mtime:
                 return
-            self._sections = self.notes.load()
+            sections = self.notes.load()
         except (NotesError, OSError) as exc:
             self._set_status(str(exc))
             return
-        self._notes_mtime = mtime
+        self._install_notes(sections, mtime)
+
+    def _install_notes(self, sections: list[Section], stamp: int) -> None:
+        self._notes_mtime = stamp
+        self._notes_generation += 1
+        self._sections = sections
+        self._textures.clear()
         self._rebuild_notes()
         threading.Thread(
-            target=self._compile_math, args=(self._sections, mtime, self._math_color()), daemon=True
+            target=self._compile_math, args=(self._sections, self._notes_generation, self._math_color()), daemon=True
         ).start()
 
     def _formulas(self, sections: list[Section]) -> list[mathimg.Formula]:
@@ -1343,12 +1439,12 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.poll_notes()
         return False
 
-    def _compile_math(self, sections: list[Section], mtime: int, fg: str) -> None:
+    def _compile_math(self, sections: list[Section], generation: int, fg: str) -> None:
         images = mathimg.render(self._formulas(sections), fg=fg)
-        GLib.idle_add(self._math_ready, images, mtime)
+        GLib.idle_add(self._math_ready, images, generation)
 
-    def _math_ready(self, images: dict[mathimg.Formula, Path], mtime: int) -> bool:
-        if mtime != self._notes_mtime:
+    def _math_ready(self, images: dict[mathimg.Formula, Path], generation: int) -> bool:
+        if generation != self._notes_generation:
             return False  # notes changed again while compiling
         try:
             self._textures = {f: Gdk.Texture.new_from_filename(str(p)) for f, p in images.items()}

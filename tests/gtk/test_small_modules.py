@@ -372,6 +372,53 @@ def test_the_launcher_switches_to_other_slides_and_a_failing_projector_ends_it(r
     assert launcher.failure == ["no projector"]
 
 
+def test_a_dropped_pdf_replaces_the_deck_and_loads_its_adjacent_notes(application, pdf_maker) -> None:
+    launcher = app_module.Launcher(application, config.Options(), projector="none", windowed=True, monitor=None)
+    launcher.begin(PDF, None)
+    first = launcher.session
+    assert first is not None
+    replacement = pdf_maker([{}], name="replacement.pdf")
+    notes = replacement.with_suffix(".md")
+    notes.write_text("replacement notes")
+
+    first.console.on_replace_slides(replacement)
+
+    second = launcher.session
+    assert second is not None
+    assert second is not first
+    assert second.pdf == replacement
+    assert second.console.notes.path == notes
+    second.finish()
+    launcher.session = None
+
+    plain = pdf_maker([{}], name="plain.pdf")
+    launcher.replace_slides(plain)
+    third = launcher.session
+    assert third is not None
+    assert third.pdf == plain
+    assert third.console.notes is None
+    third.finish()
+    launcher.session = None
+
+
+def test_a_bad_dropped_pdf_keeps_the_current_deck(application, tmp_path, capsys) -> None:
+    launcher = app_module.Launcher(application, config.Options(), projector="none", windowed=True, monitor=None)
+    launcher.begin(PDF, None)
+    current = launcher.session
+    assert current is not None
+    bad_pdf = tmp_path / "broken.pdf"
+    bad_pdf.write_text("not a PDF")
+
+    launcher.replace_slides(bad_pdf)
+
+    assert launcher.session is current
+    assert "cannot open slides" in current.console.last_message
+    current.finish()
+    launcher.session = None
+    launcher.replace_slides(bad_pdf)
+    assert "lectos: cannot open slides broken.pdf:" in capsys.readouterr().err
+
+
 def test_bundled_icons_are_registered_once() -> None:
     from gi.repository import Gdk, Gtk
 

@@ -578,9 +578,6 @@ msgstr "рисование мышью выключено"
 msgid "mouse drawing on"
 msgstr "рисование мышью включено"
 
-msgid "eraser off"
-msgstr "ластик выключен"
-
 msgid "eraser on"
 msgstr "ластик включён"
 
@@ -845,6 +842,24 @@ msgstr "Открыть папку…"
 msgid "Start"
 msgstr "Начать"
 
+msgid "Replace slides?"
+msgstr "Заменить слайды?"
+
+msgid "Replace notes?"
+msgstr "Заменить заметки?"
+
+msgid "Replace"
+msgstr "Заменить"
+
+msgid "notes replaced with {name}"
+msgstr "Заметки заменены на {name}"
+
+msgid "cannot read {path}: {error}"
+msgstr "Не удалось прочитать {path}: {error}"
+
+msgid "cannot open slides {name}: {error}"
+msgstr "Не удалось открыть слайды {name}: {error}"
+
 msgid "Open a presentation"
 msgstr "Открыть презентацию"
 
@@ -880,3 +895,9 @@ msgstr "открыто: {uri}"
 
 msgid "the PDF has notes pages: Zathura would show them to the audience, use the gtk projector"
 msgstr "в PDF есть страницы заметок: Zathura покажет их аудитории, используйте gtk-проектор"
+
+msgid "Replace {old} with {new}?"
+msgstr "Заменить {old} на {new}?"
+
+msgid "Use {new} as the notes?"
+msgstr "Использовать {new} как заметки?"

@@ -19,7 +19,7 @@ and presentation recovery. Lectos reads Beamer notes but never compiles slides o
 
 By default, `lectos` without arguments opens a chooser for slides, notes, or a folder. Drop a PDF, notes file, both files,
 or a folder onto it. In the GTK console, `Ctrl+O` opens the slide chooser or switches presentations. Notes beside a PDF
-are found automatically.
+are found automatically. While presenting, drop one PDF or `.md`/`.tex` file to request a replacement; lectos asks first.
 
 ![The wide layout on a big screen: slide with ink and laser, audience and next previews, notes with typeset math, and the filmstrip](docs/screenshots/wide.png)
 

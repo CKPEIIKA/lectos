@@ -195,6 +195,6 @@ def merge_edits(base: list[Section], edits: list[Section]) -> list[Section]:
 
 def open_notes(notes: Path, pdf: Path) -> NotesSource:
     """Choose the notes source by file type: ``.tex`` is Beamer (edits are kept in the state folder), else Markdown."""
-    if notes.suffix == ".tex":
+    if notes.suffix.lower() == ".tex":
         return BeamerNotes(notes, [notes.with_suffix(".nav"), pdf.with_suffix(".nav")], edits_path(pdf))
     return MarkdownNotes(notes)

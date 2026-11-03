@@ -66,13 +66,15 @@ def test_to_markdown_items_and_formatting() -> None:
 
 
 def test_open_notes_chooses_source_by_suffix(tmp_path: Path) -> None:
-    tex, md, pdf = tmp_path / "a.tex", tmp_path / "a.md", tmp_path / "a.pdf"
+    tex, upper_tex, md, pdf = tmp_path / "a.tex", tmp_path / "A.TEX", tmp_path / "a.md", tmp_path / "a.pdf"
     tex.write_text(TEX)
+    upper_tex.write_text(TEX)
     md.write_text("x")
     assert isinstance(beamer.open_notes(md, pdf), MarkdownNotes)
     source = beamer.open_notes(tex, pdf)
     assert isinstance(source, beamer.BeamerNotes)
     assert [s.slide for s in source.load()] == [1, 2, 3]
+    assert isinstance(beamer.open_notes(upper_tex, pdf), beamer.BeamerNotes)
     (tmp_path / "a.nav").write_text(NAV)  # picked up once it exists
     assert [s.slide for s in source.load()] == [FIRST, SECOND, THIRD]
     assert source.stamp() > 0

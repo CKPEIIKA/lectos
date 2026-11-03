@@ -1,6 +1,6 @@
 import cairo
 import pytest
-from gi.repository import Gdk, Gtk
+from gi.repository import Gdk, Gio, Gtk
 
 NONE = Gdk.ModifierType(0)
 NOTES_MD = None  # set per test from the examples folder
@@ -18,6 +18,73 @@ def has_ink(surface: cairo.ImageSurface) -> bool:
 
 def key(console, keyval: int, state: Gdk.ModifierType = NONE) -> bool:
     return console._on_key(None, keyval, 0, state)
+
+
+def test_dropping_one_local_supported_file_requests_confirmation(rig, pdf_maker, tmp_path, monkeypatch) -> None:
+    c = rig.console
+    requested = []
+    monkeypatch.setattr(c, "_confirm_drop", lambda path, *, slides: requested.append((path, slides)))
+    pdf = pdf_maker([{}], name="replace.pdf")
+    notes = tmp_path / "replace.md"
+    notes.write_text("notes")
+    other = tmp_path / "other.txt"
+    other.write_text("text")
+
+    def local(path):
+        return Gio.File.new_for_path(str(path))
+
+    assert c._drop_files(None, Gdk.FileList.new_from_array([local(pdf)]), 0.0, 0.0) is True
+    assert c._drop_files(None, Gdk.FileList.new_from_array([local(notes)]), 0.0, 0.0) is True
+    assert c._drop_files(None, Gdk.FileList.new_from_array([local(other)]), 0.0, 0.0) is False
+    assert c._drop_files(None, Gdk.FileList.new_from_array([local(tmp_path)]), 0.0, 0.0) is False
+    assert c._drop_files(None, Gdk.FileList.new_from_array([local(pdf), local(notes)]), 0.0, 0.0) is False
+    remote = Gio.File.new_for_uri("https://example.test/slides.pdf")
+    assert c._drop_files(None, Gdk.FileList.new_from_array([remote]), 0.0, 0.0) is False
+    assert c._drop_files(None, object(), 0.0, 0.0) is False
+    assert requested == [(pdf, True), (notes, False)]
+
+
+def test_drop_confirmation_replaces_only_after_acceptance(rig, pdf_maker) -> None:
+    c = rig.console
+    pdf = pdf_maker([{}], name="replacement.pdf")
+    opened = []
+    c.on_replace_slides = opened.append
+
+    c._confirm_drop(pdf, slides=True)
+    dialog = c._drop_dialog
+    assert dialog.get_property("heading") == "Replace slides?"
+    assert dialog.get_property("body") == f"Replace {c.doc.path.name} with replacement.pdf?"
+    c._confirm_drop(pdf, slides=False)
+    assert c._drop_dialog is dialog
+    dialog.emit("response", "cancel")
+    assert opened == []
+
+    c._confirm_drop(pdf, slides=True)
+    c._drop_dialog.emit("response", "replace")
+    assert opened == [pdf]
+
+
+def test_drop_confirmation_for_notes_names_the_current_file_or_says_there_is_none(rig, tmp_path) -> None:
+    c = rig.console
+    notes = tmp_path / "new.md"
+    c.notes = type("Named", (), {"path": tmp_path / "old.md"})()
+    c._confirm_drop(notes, slides=False)
+    assert c._drop_dialog.get_property("body") == "Replace old.md with new.md?"
+    c._drop_dialog.emit("response", "cancel")
+
+    c.notes = type("Named", (), {"tex": tmp_path / "old.tex"})()
+    assert c._notes_name() == "old.tex"
+    c.notes = object()
+    c._confirm_drop(notes, slides=False)
+    assert c._drop_dialog.get_property("body") == "Use new.md as the notes?"
+    c._drop_dialog.emit("response", "cancel")
+
+
+def test_drop_confirmation_without_a_launcher_reports_the_missing_handler(rig, pdf_maker) -> None:
+    c = rig.console
+    c._confirm_drop(pdf_maker([{}]), slides=True)
+    c._drop_dialog.emit("response", "replace")
+    assert "not available" in c.last_message
 
 
 # ---- window size, layout, panes, filmstrip ----
@@ -291,7 +358,7 @@ def test_drawing_flags_announce_themselves(rig) -> None:
     c.execute("eraser on")
     assert c.last_message == "eraser on"
     c.execute("eraser off")
-    assert c.last_message == "eraser off"
+    assert c.last_message == "pen"
 
 
 def test_export_writes_a_pdf_and_reports_failures(rig, tmp_path) -> None:

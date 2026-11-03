@@ -578,9 +578,6 @@ msgstr "Zeichnen mit der Maus aus"
 msgid "mouse drawing on"
 msgstr "Zeichnen mit der Maus an"
 
-msgid "eraser off"
-msgstr "Radierer aus"
-
 msgid "eraser on"
 msgstr "Radierer an"
 
@@ -845,6 +842,24 @@ msgstr "Ordner öffnen…"
 msgid "Start"
 msgstr "Starten"
 
+msgid "Replace slides?"
+msgstr "Folien ersetzen?"
+
+msgid "Replace notes?"
+msgstr "Notizen ersetzen?"
+
+msgid "Replace"
+msgstr "Ersetzen"
+
+msgid "notes replaced with {name}"
+msgstr "Notizen durch {name} ersetzt"
+
+msgid "cannot read {path}: {error}"
+msgstr "Kann {path} nicht lesen: {error}"
+
+msgid "cannot open slides {name}: {error}"
+msgstr "Folien {name} können nicht geöffnet werden: {error}"
+
 msgid "Open a presentation"
 msgstr "Präsentation öffnen"
 
@@ -880,3 +895,9 @@ msgstr "{uri} geöffnet"
 
 msgid "the PDF has notes pages: Zathura would show them to the audience, use the gtk projector"
 msgstr "Das PDF hat Notizseiten: Zathura würde sie dem Publikum zeigen, nutze den gtk-Projektor"
+
+msgid "Replace {old} with {new}?"
+msgstr "{old} durch {new} ersetzen?"
+
+msgid "Use {new} as the notes?"
+msgstr "{new} als Notizen verwenden?"

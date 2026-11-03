@@ -49,6 +49,83 @@ def test_a_notes_file_that_breaks_is_reported_and_retried(build_rig, tmp_path, p
     assert c.last_message == "cannot parse the notes"
 
 
+def test_replacing_notes_uses_the_dropped_markdown_file_and_keeps_the_old_file(build_rig, tmp_path) -> None:
+    old = tmp_path / "old.md"
+    old.write_text("old notes")
+    replacement = tmp_path / "replacement.md"
+    replacement.write_text("<!-- slide: 1 -->\nnew notes")
+    c = build_rig(notes=old).console
+    c.search_entry.set_text("new notes")
+    generation = c._notes_generation
+
+    c._confirm_drop(replacement, slides=False)
+    c._drop_dialog.emit("response", "replace")
+
+    shown = c.buffer.get_text(c.buffer.get_start_iter(), c.buffer.get_end_iter(), False)
+    assert c.notes.path == replacement
+    assert c._notes_generation == generation + 1
+    assert c._math_ready({}, generation) is False
+    assert "new notes" in shown
+    assert any(hit.kind == "notes" for hit in c.hits)
+    assert old.read_text() == "old notes"
+    assert c.last_message == "notes replaced with replacement.md"
+
+
+def test_replacing_notes_with_beamer_reads_but_does_not_modify_tex(build_rig, tmp_path) -> None:
+    old = tmp_path / "old.md"
+    old.write_text("old notes")
+    tex = tmp_path / "replacement.tex"
+    tex.write_text(r"\begin{frame}{New}\note{Beamer notes}\end{frame}")
+    before = tex.read_text()
+    c = build_rig(notes=old).console
+
+    c._replace_notes(tex)
+
+    shown = c.buffer.get_text(c.buffer.get_start_iter(), c.buffer.get_end_iter(), False)
+    assert c.notes.tex == tex
+    assert "Beamer notes" in shown
+    assert tex.read_text() == before
+
+
+def test_a_missing_dropped_notes_file_keeps_the_current_notes(build_rig, tmp_path) -> None:
+    old = tmp_path / "old.md"
+    old.write_text("current notes")
+    c = build_rig(notes=old).console
+    source = c.notes
+    missing = tmp_path / "missing.md"
+
+    c._replace_notes(missing)
+
+    shown = c.buffer.get_text(c.buffer.get_start_iter(), c.buffer.get_end_iter(), False)
+    assert c.notes is source
+    assert "current notes" in shown
+    assert c.last_message.startswith("cannot read ")
+
+
+def test_invalid_dropped_notes_keep_the_current_source(build_rig, tmp_path, monkeypatch) -> None:
+    from lectos.gtk import console as console_module
+
+    old = tmp_path / "old.md"
+    old.write_text("current notes")
+    c = build_rig(notes=old).console
+
+    class InvalidSource:
+        def stamp(self) -> int:
+            return 1
+
+        def load(self) -> list:
+            raise NotesError("cannot parse replacement notes")
+
+    monkeypatch.setattr(console_module, "open_notes", lambda *_args: InvalidSource())
+    source = c.notes
+    c._replace_notes(tmp_path / "replacement.md")
+
+    shown = c.buffer.get_text(c.buffer.get_start_iter(), c.buffer.get_end_iter(), False)
+    assert c.notes is source
+    assert "current notes" in shown
+    assert c.last_message == "cannot parse replacement notes"
+
+
 def test_the_notes_colour_falls_back_when_the_theme_has_none(rig, monkeypatch) -> None:
     c = rig.console
     assert c._math_color().startswith("#")
@@ -66,17 +143,17 @@ def test_changing_the_theme_recompiles_the_formulas(rig) -> None:
 
 def test_compiled_formulas_become_textures_and_failures_are_reported(rig) -> None:
     c = rig.console
-    mtime = c._notes_mtime
-    assert c._math_ready({}, mtime - 5) is False  # notes changed while compiling: stale result
+    generation = c._notes_generation
+    assert c._math_ready({}, generation - 1) is False  # notes changed while compiling: stale result
     broken = EXAMPLES / "slides.pdf"  # not an image: GdkTexture refuses it
     formula = mathimg.Formula("x", False)
-    assert c._math_ready({formula: broken}, mtime) is False
+    assert c._math_ready({formula: broken}, generation) is False
     assert c.last_message.startswith("math image error:")
     image = cairo.ImageSurface(cairo.FORMAT_ARGB32, 4, 4)
     path = EXAMPLES.parent / ".pytest_cache" / "formula.png"
     path.parent.mkdir(exist_ok=True)
     image.write_to_png(str(path))
-    assert c._math_ready({formula: path}, mtime) is False
+    assert c._math_ready({formula: path}, generation) is False
     assert formula in c._textures
 
 

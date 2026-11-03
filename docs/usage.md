@@ -91,7 +91,7 @@ See `examples/options.toml` and `examples/standby.svg`. Status: tested with unit
 
 ## Opening slides
 
-`lectos` without arguments opens a start window: choose the PDF slides, the notes (optional) or a whole folder. You can also drop one PDF, one `.md` or `.tex` notes file, both files together, or a folder onto the window. `Ctrl+O` opens the slide chooser there and opens the existing **Open other slides…** flow while presenting; `:open` does the same. Notes next to the slides (`slides.tex`, `slides.md`, then `notes.tex`, `notes.md`) are found automatically, also when you give a PDF or a folder on the command line; the old deck's state is saved before switching.
+`lectos` without arguments opens a start window: choose the PDF slides, the notes (optional) or a whole folder. You can also drop one PDF, one `.md` or `.tex` notes file, both files together, or a folder onto the window. While presenting, drop one PDF to replace the slides or one `.md`/`.tex` file to replace the notes; lectos asks for confirmation first. `Ctrl+O` opens the slide chooser there and opens the existing **Open other slides…** flow while presenting; `:open` does the same. Notes next to the slides (`slides.tex`, `slides.md`, then `notes.tex`, `notes.md`) are found automatically, also when you give a PDF or a folder on the command line; the old deck's state is saved before switching.
 
 ## Editing notes
 

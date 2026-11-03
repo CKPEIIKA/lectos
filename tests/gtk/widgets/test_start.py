@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 
 import pytest
-from gi.repository import GLib, Gtk
+from gi.repository import Gdk, Gio, GLib, Gtk
 
 from lectos.gtk.widgets.start import StartWindow
 
@@ -127,3 +127,61 @@ def test_a_pdf_picked_in_the_folder_dialog_is_taken_as_the_slides(started, deck)
     assert window.set_folder(deck / "slides.pdf") is True
     assert (window.slides, window.notes) == (deck / "slides.pdf", deck / "slides.tex")
     assert window.set_folder(deck / "notes.md") is False  # another kind of file is no folder either
+
+
+def test_a_drop_selects_slides_notes_or_a_folder_and_rejects_ambiguous_files(started, deck, tmp_path) -> None:
+    window, _calls = started
+    pdf, tex, md = deck / "slides.pdf", deck / "slides.tex", deck / "notes.md"
+    assert window._apply_drop([]) is False
+    assert window._apply_drop([deck]) is True
+    assert (window.slides, window.notes) == (pdf, tex)
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert window._apply_drop([empty]) is False
+    assert window._apply_drop([pdf, md]) is True
+    assert (window.slides, window.notes) == (pdf, md)
+    assert window._apply_drop([md]) is True
+    assert window._apply_drop([pdf]) is True
+    assert window._apply_drop([pdf, pdf]) is False
+    assert window._apply_drop([md, tex]) is False
+    other = tmp_path / "other.txt"
+    other.write_text("text")
+    assert window._apply_drop([pdf, other]) is False
+
+
+def test_drop_paths_accept_only_bounded_local_file_lists(started, deck) -> None:
+    window, _calls = started
+    files = [Gio.File.new_for_path(str(deck / name)) for name in ("slides.pdf", "slides.tex", "notes.md")]
+    assert window._drop_paths(object()) is None
+    assert window._drop_paths(Gdk.FileList.new_from_array(files)) is None
+    assert window._drop_paths(Gdk.FileList.new_from_array([Gio.File.new_for_uri("https://example.test/a.pdf")])) is None
+    assert window._drop_paths(Gdk.FileList.new_from_array(files[:2])) == [deck / "slides.pdf", deck / "slides.tex"]
+
+
+def test_drop_callback_routes_only_valid_local_file_lists(started, deck, monkeypatch) -> None:
+    window, _calls = started
+    received = []
+
+    def apply(paths):
+        received.append(paths)
+        return True
+
+    monkeypatch.setattr(window, "_apply_drop", apply)
+    assert window._drop_files(None, object(), 0.0, 0.0) is False
+    remote = Gdk.FileList.new_from_array([Gio.File.new_for_uri("https://example.test/a.pdf")])
+    assert window._drop_files(None, remote, 0.0, 0.0) is False
+    files = Gdk.FileList.new_from_array([Gio.File.new_for_path(str(deck / "slides.pdf"))])
+    assert window._drop_files(None, files, 0.0, 0.0) is True
+    assert received == [[deck / "slides.pdf"]]
+
+
+def test_the_default_window_shows_everything_without_scrolling_and_may_shrink(started) -> None:
+    window, _calls = started
+    scroller = window.get_content().get_content()
+    assert isinstance(scroller, Gtk.ScrolledWindow)
+    _minimum, natural, _b, _l = scroller.get_child().measure(Gtk.Orientation.VERTICAL, 480)
+    header = 60  # headerbar and borders, generously
+    assert natural + header <= window.get_default_size()[1]
+    assert scroller.get_propagate_natural_height() is False  # a small window scrolls instead of growing
+    assert scroller.get_policy()[0] == Gtk.PolicyType.NEVER
