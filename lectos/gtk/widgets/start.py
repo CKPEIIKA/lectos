@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import gi
@@ -25,11 +25,17 @@ MAX_DROP_FILES = 2
 class StartWindow(Adw.ApplicationWindow):
     """Pick the PDF slides and optional notes (or one folder holding both), then start presenting."""
 
-    def __init__(self, app: Gtk.Application, on_start: Callable[[Path, Path | None], None]) -> None:
+    def __init__(
+        self,
+        app: Gtk.Application,
+        on_start: Callable[[Path, Path | None], None],
+        notes_names: Sequence[str] = (),
+    ) -> None:
         super().__init__(
             application=app, title=tr("lectos - open a presentation"), default_width=520, default_height=CONTENT_FIT_PX
         )
         self.on_start = on_start
+        self.notes_names = notes_names
         self.slides: Path | None = None
         self.notes: Path | None = None
         self.slides_row = Adw.ActionRow(title=tr("Slides"), subtitle=tr("not chosen"))
@@ -82,7 +88,7 @@ class StartWindow(Adw.ApplicationWindow):
         self.slides = pdf
         self.slides_row.set_subtitle(str(pdf))
         if self.notes is None:
-            self._show_notes(notes_for(pdf), found=True)
+            self._show_notes(notes_for(pdf, self.notes_names), found=True)
         self.start_button.set_sensitive(True)
 
     def set_notes(self, notes: Path | None) -> None:
@@ -105,7 +111,7 @@ class StartWindow(Adw.ApplicationWindow):
             self.notes = None
             self.set_slides(folder)
             return True
-        found = discover(folder)
+        found = discover(folder, self.notes_names)
         if found is None:
             self.slides_row.set_subtitle(tr("no PDF in {folder}").format(folder=folder))
             return False

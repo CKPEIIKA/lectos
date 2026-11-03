@@ -94,6 +94,7 @@ class Options:
     previous: int = layouts.DEFAULT_PREVIOUS
     upcoming: int = layouts.DEFAULT_UPCOMING
     notes_pages: str = "auto"  # where Beamer's second-screen notes sit on a page: auto none left right
+    notes_names: tuple[str, ...] = ()  # extra notes file names looked for next to the slides ([files] notes_names)
     hidden: tuple[str, ...] = ()  # console panels hidden at startup: notes audience next strip status
     language: str = "auto"  # "auto" reads the environment, or "en" / "ru"
     console: str | None = None  # "gtk" or "tui"; None means the entry point decides
@@ -161,6 +162,15 @@ def _notes_pages(section: dict[str, object]) -> str:
     if value not in layouts.NOTES_PAGES:
         raise ConfigError(f"[console] notes_pages must be one of {', '.join(layouts.NOTES_PAGES)}")
     return value
+
+
+def _notes_names(section: dict[str, object]) -> tuple[str, ...]:
+    raw = section.get("notes_names", [])
+    if not isinstance(raw, list) or not all(isinstance(i, str) and i for i in raw):
+        raise ConfigError("[files] notes_names must be a list of file names")
+    if any(Path(i).name != i for i in raw):
+        raise ConfigError("[files] notes_names holds file names, not paths")
+    return tuple(dict.fromkeys(raw))
 
 
 def _hidden(section: dict[str, object]) -> tuple[str, ...]:
@@ -269,7 +279,7 @@ def _layout_mode(section: dict[str, object]) -> str:
 
 def parse(data: dict[str, object], base: Path) -> Options:
     """Validate parsed TOML; relative image paths resolve against ``base``."""
-    unknown = sorted(set(data) - {"blackout", "console", "ui", "header", "drawing", "laser"})
+    unknown = sorted(set(data) - {"blackout", "console", "ui", "header", "drawing", "laser", "files"})
     if unknown:
         raise ConfigError(f"unknown section [{unknown[0]}]")
     black = _section(data, "blackout", {"image", "text", "background", "text_color"})
@@ -277,6 +287,7 @@ def parse(data: dict[str, object], base: Path) -> Options:
     head = _section(data, "header", {"start", "title", "end"})
     draw = _section(data, "drawing", {"color", "width", "highlighter_alpha", "eraser_radius", "smoothing", "board"})
     pointer = _section(data, "laser", {"color", "size", "style", "halo"})
+    files = _section(data, "files", {"notes_names"})
     ui = _section(data, "ui", {"console", "projector", "language"})
     target = _target(console)
     return Options(
@@ -296,6 +307,7 @@ def parse(data: dict[str, object], base: Path) -> Options:
         upcoming=_count(console, "upcoming", layouts.DEFAULT_UPCOMING, layouts.MAX_UPCOMING),
         hidden=_hidden(console),
         notes_pages=_notes_pages(console),
+        notes_names=_notes_names(files),
         language=_choice(ui, "language", ("auto", *i18n.LANGUAGES)) or "auto",
         console=_choice(ui, "console", CONSOLES),
         projector=_choice(ui, "projector", PROJECTORS),

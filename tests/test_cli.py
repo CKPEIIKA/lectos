@@ -309,3 +309,19 @@ def test_the_notes_pages_flag_reaches_the_options(monkeypatch: pytest.MonkeyPatc
     (tmp_path / "s.pdf").write_bytes(b"%PDF-")
     assert cli.main([str(tmp_path / "s.pdf"), "--notes-pages", "left"]) == 0
     assert seen[0].notes_pages == "left"
+
+
+def test_configured_notes_names_are_looked_for_next_to_the_slides(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    seen: list[argparse.Namespace] = []
+    monkeypatch.setattr(cli, "_dispatch", lambda console, projector, args, options: seen.append(args) or 0)
+    config_dir = tmp_path / "cfg" / "lectos"
+    config_dir.mkdir(parents=True)
+    (config_dir / "options.toml").write_text('[files]\nnotes_names = ["speaker_notes.md"]\n')
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
+    (tmp_path / "s.pdf").write_bytes(b"%PDF-")
+    (tmp_path / "speaker_notes.md").write_text("x")
+    assert cli.main([str(tmp_path / "s.pdf")]) == 0
+    assert cli.main([str(tmp_path)]) == 0
+    assert [a.notes for a in seen] == [tmp_path / "speaker_notes.md"] * 2

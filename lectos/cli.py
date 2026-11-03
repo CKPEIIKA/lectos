@@ -67,16 +67,16 @@ def build_parser(prog: str) -> argparse.ArgumentParser:
     return parser
 
 
-def _resolve_inputs(args: argparse.Namespace) -> str:
+def _resolve_inputs(args: argparse.Namespace, notes_names: Sequence[str]) -> str:
     """Fill in the slides and notes from a folder or from next to the slides; returns an error text or ''."""
     if args.pdf is not None and args.pdf.is_dir():
-        found = discover(args.pdf)
+        found = discover(args.pdf, notes_names)
         if found is None:
             return f"no PDF in {args.pdf}"
         args.pdf, found_notes = found
         args.notes = args.notes or found_notes
     elif args.pdf is not None and args.notes is None:
-        args.notes = notes_for(args.pdf)  # slides.tex or slides.md next to slides.pdf
+        args.notes = notes_for(args.pdf, notes_names)  # slides.tex, slides.md, notes.* or [files] notes_names
     missing = next((p for p in (args.pdf, args.notes) if p is not None and not p.is_file()), None)
     return f"not a file: {missing}" if missing is not None else ""
 
@@ -84,14 +84,14 @@ def _resolve_inputs(args: argparse.Namespace) -> str:
 def main(argv: Sequence[str] | None = None, *, default_console: str = "gtk", default_projector: str = "gtk") -> int:
     """Run the chosen console with the chosen projector."""
     args = build_parser("lectos" if default_console == "gtk" else "lectos-tui").parse_args(argv)
-    failure = _resolve_inputs(args)
-    if failure:
-        print(f"lectos: {failure}", file=sys.stderr)
-        return 2
     try:
         options = load(args.config)
     except ConfigError as exc:
         print(f"lectos: {exc}", file=sys.stderr)
+        return 2
+    failure = _resolve_inputs(args, options.notes_names)
+    if failure:
+        print(f"lectos: {failure}", file=sys.stderr)
         return 2
     if args.no_vim:
         options = replace(options, vim=False)

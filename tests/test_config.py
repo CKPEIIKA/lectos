@@ -188,3 +188,16 @@ def test_notes_pages_must_be_a_known_placement(tmp_path: Path) -> None:
     assert config.load(write(tmp_path, '[console]\nnotes_pages = "left"\n')).notes_pages == "left"
     with pytest.raises(ConfigError, match="notes_pages must be one of"):
         config.load(write(tmp_path, '[console]\nnotes_pages = "top"\n'))
+
+
+def test_extra_notes_names_are_file_names_from_the_files_section(tmp_path: Path) -> None:
+    assert Options().notes_names == ()
+    text = '[files]\nnotes_names = ["speaker_notes.md", "speaker_notes.md", "talk.tex"]\n'
+    assert config.load(write(tmp_path, text)).notes_names == ("speaker_notes.md", "talk.tex")
+    for text, message in (
+        ('[files]\nnotes_names = "a.md"\n', "list of file names"),
+        ('[files]\nnotes_names = [""]\n', "list of file names"),
+        ('[files]\nnotes_names = ["sub/a.md"]\n', "not paths"),
+    ):
+        with pytest.raises(ConfigError, match=message):
+            config.load(write(tmp_path, text))

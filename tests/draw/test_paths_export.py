@@ -78,14 +78,17 @@ def test_notes_are_found_next_to_the_slides(tmp_path: Path) -> None:
 
     pdf = tmp_path / "talk.pdf"
     assert notes_for(pdf) is None
-    (tmp_path / "speaker_notes.md").write_text("x")
-    assert notes_for(pdf) == tmp_path / "speaker_notes.md"
     (tmp_path / "notes.md").write_text("x")
     assert notes_for(pdf) == tmp_path / "notes.md"
     (tmp_path / "talk.md").write_text("x")
     assert notes_for(pdf) == tmp_path / "talk.md"
     (tmp_path / "talk.tex").write_text("x")
     assert notes_for(pdf) == tmp_path / "talk.tex"  # Beamer source first
+    other = tmp_path / "sub" / "other.pdf"
+    other.parent.mkdir()
+    assert notes_for(other, ("lecture.md",)) is None
+    (other.parent / "lecture.md").write_text("x")
+    assert notes_for(other, ("lecture.md",)) == other.parent / "lecture.md"  # configured extra name
 
 
 def test_a_folder_gives_the_slides_that_have_notes(tmp_path: Path) -> None:

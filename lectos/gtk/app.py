@@ -195,7 +195,7 @@ class Launcher:
 
     def show_start(self) -> None:
         """The window that chooses slides and notes."""
-        start = StartWindow(self.app, lambda pdf, notes: self._chosen(start, pdf, notes))
+        start = StartWindow(self.app, lambda pdf, notes: self._chosen(start, pdf, notes), self.options.notes_names)
         start.present()
 
     def _chosen(self, start: StartWindow, pdf: Path, notes: Path | None) -> None:
@@ -217,7 +217,7 @@ class Launcher:
             else:
                 print(f"lectos: {message}", file=sys.stderr)
             return
-        notes = notes_for(pdf)
+        notes = notes_for(pdf, self.options.notes_names)
         source = open_notes(notes, pdf) if notes else None
         if session is not None:
             session.finish()

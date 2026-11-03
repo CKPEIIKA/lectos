@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 MAX_TRIES = 1000
@@ -21,20 +22,21 @@ def unique(path: Path) -> Path:
 
 
 NOTES_SUFFIXES = (".tex", ".md")
-GENERIC_NOTES = ("notes.tex", "notes.md", "speaker_notes.md")
+GENERIC_NOTES = ("notes.tex", "notes.md")
 
 
-def notes_for(pdf: Path) -> Path | None:
-    """Notes next to the slides: ``slides.tex`` or ``slides.md``, else ``notes.tex``, ``notes.md`` or ``speaker_notes.md`` in the folder."""
-    names = [pdf.with_suffix(suffix).name for suffix in NOTES_SUFFIXES] + list(GENERIC_NOTES)
+def notes_for(pdf: Path, extra: Sequence[str] = ()) -> Path | None:
+    """Notes next to the slides: ``slides.tex`` or ``slides.md``, else ``notes.tex``, ``notes.md`` or one of the
+    ``extra`` file names (``[files] notes_names``) in the folder."""
+    names = [pdf.with_suffix(suffix).name for suffix in NOTES_SUFFIXES] + list(GENERIC_NOTES) + list(extra)
     return next((found for name in names if (found := pdf.with_name(name)).is_file()), None)
 
 
-def discover(folder: Path) -> tuple[Path, Path | None] | None:
+def discover(folder: Path, extra: Sequence[str] = ()) -> tuple[Path, Path | None] | None:
     """The slides in a folder and their notes: the first PDF that has notes, else the first PDF by name."""
     pdfs = sorted(p for p in folder.glob("*.pdf") if p.is_file())
     for pdf in pdfs:
-        notes = notes_for(pdf)
+        notes = notes_for(pdf, extra)
         if notes is not None:
             return pdf, notes
     return (pdfs[0], None) if pdfs else None
