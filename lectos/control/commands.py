@@ -129,6 +129,11 @@ HELP = {
     "color": Help("color NAME|#rrggbb", noop("Pen colour: red, yellow, green, blue, white, black."), noop("Drawing")),
     "width": Help("width N", noop("Pen width 1..40."), noop("Drawing")),
     "smooth": Help("smooth N", noop("Smooth finished strokes, 0 (off) to 5."), noop("Drawing")),
+    "shape": Help(
+        "shape NAME",
+        noop("What a drag draws: freehand, line, arrow, rect or ellipse (configurable as [drawing] shape)."),
+        noop("Drawing"),
+    ),
     "eraser-size": Help("eraser-size N", noop("Eraser radius, 4..80."), noop("Drawing")),
     "highlight-alpha": Help("highlight-alpha X", noop("Highlighter opacity, 0.1..0.9."), noop("Drawing")),
     "undo": Help("undo", noop("Undo the last ink change on this slide (or the board)."), noop("Drawing")),

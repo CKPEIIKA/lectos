@@ -2,6 +2,11 @@
 
 Completed work only. Record meaningful outcomes and validation evidence, newest first.
 
+## 2026-11-03: shape tools
+
+- `shape freehand|line|arrow|rect|ellipse` in both consoles (GTK Drawing menu, `:shape`, `[drawing] shape`); shapes are stored as two end points, saved with the ink (`"s"` key; old files load unchanged), drawn through one outline function shared by the stage, export and the eraser. The eraser now measures distance to the stroke's segments, not only its points.
+- 505 tests, 100% coverage, ruff and ty clean.
+
 ## 2026-10-13: PDF links, annotations, Beamer notes pages
 
 - Clickable PDF links in the console preview and the projector window: page links go there (the projector follows), http/https/mailto open in the desktop's browser, anything else is never opened; inactive while drawing, on the board and for pen input.

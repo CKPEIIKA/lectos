@@ -206,3 +206,10 @@ def test_extra_notes_names_are_file_names_from_the_files_section(tmp_path: Path)
 def test_the_menu_bar_can_start_visible(tmp_path: Path) -> None:
     assert Options().menubar is False
     assert config.load(write(tmp_path, "[console]\nmenubar = true\n")).menubar is True
+
+
+def test_the_default_shape_is_validated(tmp_path: Path) -> None:
+    assert Options().drawing.shape == "freehand"
+    assert config.load(write(tmp_path, '[drawing]\nshape = "arrow"\n')).drawing.shape == "arrow"
+    with pytest.raises(ConfigError, match="shape must be one of"):
+        config.load(write(tmp_path, '[drawing]\nshape = "star"\n'))

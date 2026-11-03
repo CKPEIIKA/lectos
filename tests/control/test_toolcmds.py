@@ -54,3 +54,15 @@ def test_clear_all_reports_what_it_did(tools: Tools) -> None:
 def test_laser_colour_rejects_unknown_colours(tools: Tools) -> None:
     assert tools.laser_color("zzz").startswith("colour:")
     assert tools.laser.color == LaserStyle().color
+
+
+def test_shape_command_picks_what_a_drag_draws(tools: Tools) -> None:
+    assert tools.shape("rect") == "shape rect"
+    assert tools.ink.tool.shape == "rect"
+    tools.ink.tool.eraser = True
+    assert tools.shape("ARROW") == "shape arrow"
+    assert tools.ink.tool.eraser is False  # drawing a shape ends the eraser
+    assert tools.shape("none") == "shape freehand"
+    assert tools.shape("") == "shape freehand"
+    assert tools.shape("spiral").startswith("shape needs one of: freehand line arrow rect ellipse")
+    assert tools.ink.tool.shape == "freehand"

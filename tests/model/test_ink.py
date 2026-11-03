@@ -228,3 +228,61 @@ def test_extend_without_a_stroke_and_clear_of_an_empty_layer_do_nothing() -> Non
     ink.clear("nothing-here")
     assert ink.strokes("nothing-here") == []
     assert ink.dirty is False
+
+
+# ---- shapes ----
+def test_a_shape_stroke_keeps_only_its_two_ends_and_is_drawn_as_an_outline() -> None:
+    from lectos.model.ink import outline
+
+    ink = Ink()
+    ink.tool.shape = "rect"
+    draw(ink, LAYER, (10, 10), (30, 20), (50, 40))
+    stroke = ink.strokes(LAYER)[0]
+    assert [(x, y) for x, y, _ in stroke.points] == [(10, 10), (50, 40)]
+    assert [(x, y) for x, y, _ in outline(stroke)] == [(10, 10), (50, 10), (50, 40), (10, 40), (10, 10)]
+    ink.tool.smoothing = 3
+    ink.finish(LAYER)  # shapes are never smoothed
+    assert len(stroke.points) == 2
+
+
+def test_every_shape_has_an_outline_and_a_click_stays_a_dot() -> None:
+    from lectos.model.ink import SHAPES, Stroke, outline
+
+    sizes = {}
+    for shape in SHAPES:
+        stroke = Stroke([(0.0, 0.0, 0.5), (100.0, 50.0, 0.5)], shape=shape)
+        sizes[shape] = len(outline(stroke))
+    assert sizes == {"freehand": 2, "line": 2, "arrow": 5, "rect": 5, "ellipse": 49}
+    assert len(outline(Stroke([(1.0, 1.0, 0.5)], shape="ellipse"))) == 1
+
+
+def test_the_eraser_hits_a_long_line_between_its_ends_and_a_shape_outline_not_its_inside() -> None:
+    ink = Ink()
+    ink.tool.shape = "line"
+    draw(ink, LAYER, (0, 0), (200, 0))
+    ink.tool.shape = "rect"
+    draw(ink, LAYER, (0, 50), (100, 150))
+    ink.erase_begin(LAYER)
+    ink.erase_at(LAYER, 50, 100, 10)  # inside the rectangle: nothing
+    assert len(ink.strokes(LAYER)) == 2
+    ink.erase_at(LAYER, 150, 3, 10)  # on the line, far from both of its ends
+    assert [s.shape for s in ink.strokes(LAYER)] == ["rect"]
+    ink.erase_at(LAYER, 100, 150, 10)  # on the rectangle's bottom edge
+    assert ink.strokes(LAYER) == []
+    ink.tool.shape = "freehand"
+    ink.begin(LAYER, 5, 5, 0.5)  # a click: one point
+    ink.erase_at(LAYER, 7, 5, 4)
+    assert ink.strokes(LAYER) == []
+
+
+def test_shapes_survive_saving_and_unknown_shapes_load_as_freehand() -> None:
+    ink = Ink()
+    ink.tool.shape = "arrow"
+    draw(ink, LAYER, (0, 0), (10, 10))
+    data = json.loads(json.dumps(ink.to_dict()))
+    other = Ink()
+    other.load(data)
+    assert other.strokes(LAYER)[0].shape == "arrow"
+    data["layers"][LAYER][0]["s"] = "spiral"
+    other.load(data)
+    assert other.strokes(LAYER)[0].shape == "freehand"

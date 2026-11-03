@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 import cairo
 
-from lectos.model.ink import Stroke
+from lectos.model.ink import Stroke, outline
 from lectos.model.style import BOARD_STYLES, DEFAULT_BOARD, LaserStyle
 
 BOARD_SIZE = (1600.0, 900.0)
@@ -38,11 +40,12 @@ def draw_strokes(cr: cairo.Context, strokes: list[Stroke], scale: float) -> None
 
 def _draw_stroke(cr: cairo.Context, stroke: Stroke, scale: float) -> None:
     cr.set_source_rgb(*hex_rgb(stroke.color))
-    if len(stroke.points) == 1:
-        x, y, p = stroke.points[0]
+    path = outline(stroke)
+    if len(path) == 1:
+        x, y, p = path[0]
         cr.arc(x, y, stroke.width * (PRESSURE_FLOOR + p) / scale / 2, 0, 6.2832)
         cr.fill()
-    for (x0, y0, _), (x1, y1, p1) in zip(stroke.points, stroke.points[1:], strict=False):
+    for (x0, y0, _), (x1, y1, p1) in pairwise(path):
         cr.set_line_width(stroke.width * (PRESSURE_FLOOR + p1) / scale)
         cr.move_to(x0, y0)
         cr.line_to(x1, y1)

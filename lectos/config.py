@@ -14,12 +14,14 @@ from lectos.model import layout as layouts
 from lectos.model import style
 from lectos.model.deck import MAX_TARGET_MIN, parse_minutes
 from lectos.model.ink import (
+    FREEHAND,
     MAX_ERASER_RADIUS,
     MAX_HIGHLIGHT_ALPHA,
     MAX_PEN_WIDTH,
     MAX_SMOOTHING,
     MIN_ERASER_RADIUS,
     MIN_HIGHLIGHT_ALPHA,
+    SHAPES,
     parse_color,
     parse_number,
 )
@@ -67,6 +69,7 @@ class Drawing:
     highlighter_alpha: float = 0.35
     eraser_radius: float = 14.0
     smoothing: int = 0
+    shape: str = FREEHAND
     board: str = style.DEFAULT_BOARD
 
 
@@ -234,6 +237,9 @@ def _drawing(section: dict[str, object]) -> Drawing:
     board = _typed(section, "board", str, base.board, where)
     if board not in style.BOARD_STYLES:
         raise ConfigError(f"{where}board must be one of {', '.join(style.BOARD_STYLES)}")
+    shape = _typed(section, "shape", str, base.shape, where)
+    if shape not in SHAPES:
+        raise ConfigError(f"{where}shape must be one of {', '.join(SHAPES)}")
     return Drawing(
         color=_color_option(section, "color", base.color, where),
         width=width,
@@ -244,6 +250,7 @@ def _drawing(section: dict[str, object]) -> Drawing:
             section, "eraser_radius", base.eraser_radius, (MIN_ERASER_RADIUS, MAX_ERASER_RADIUS), where
         ),
         smoothing=int(_number_option(section, "smoothing", base.smoothing, (0, MAX_SMOOTHING), where)),
+        shape=shape,
         board=board,
     )
 
@@ -288,7 +295,9 @@ def parse(data: dict[str, object], base: Path) -> Options:
         data, "console", {"vim", "target_min", "layout", "previous", "upcoming", "hide", "notes_pages", "menubar"}
     )
     head = _section(data, "header", {"start", "title", "end"})
-    draw = _section(data, "drawing", {"color", "width", "highlighter_alpha", "eraser_radius", "smoothing", "board"})
+    draw = _section(
+        data, "drawing", {"color", "width", "highlighter_alpha", "eraser_radius", "smoothing", "shape", "board"}
+    )
     pointer = _section(data, "laser", {"color", "size", "style", "halo"})
     files = _section(data, "files", {"notes_names"})
     ui = _section(data, "ui", {"console", "projector", "language"})

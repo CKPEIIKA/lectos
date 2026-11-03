@@ -9,6 +9,7 @@ import math
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from itertools import pairwise
 
 MAX_UNDO = 50
 MAX_PEN_WIDTH = 40
@@ -27,6 +28,13 @@ COLORS = {
     "red": "#e53935", "yellow": "#ffd90f", "green": "#43a047",
     "blue": "#1e88e5", "white": "#ffffff", "black": "#000000",
 }  # fmt: skip
+FREEHAND = "freehand"
+SHAPES = (FREEHAND, "line", "arrow", "rect", "ellipse")  # what a drag draws: the path, or a shape between its ends
+SHAPE_PRESSURE = 0.7  # shapes have no pressure: they are drawn as a mid-pressure stroke
+ELLIPSE_SEGMENTS = 48
+ARROW_HEAD_ANGLE = math.radians(25)
+ARROW_HEAD_MIN = 12.0
+ARROW_HEAD_SHARE = 0.2
 _SCHEMA_VERSION = 1
 _HEX_RE = re.compile(r"#[0-9a-fA-F]{6}")
 
@@ -46,6 +54,7 @@ class Stroke:
     color: str = COLORS["yellow"]
     width: float = 4.0
     alpha: float = 1.0  # below 1 for highlighter strokes
+    shape: str = FREEHAND  # not freehand: the points are the two ends of a drag
 
 
 @dataclass
@@ -60,6 +69,7 @@ class Tool:
     highlight_alpha: float = 0.35
     eraser_radius: float = ERASER_RADIUS
     smoothing: int = 0  # 0..MAX_SMOOTHING: how strongly a finished stroke is smoothed
+    shape: str = FREEHAND
 
 
 def parse_color(arg: str) -> str | None:
@@ -99,8 +109,53 @@ def smooth(points: list[Point], level: int) -> list[Point]:
     return out
 
 
+def outline(stroke: Stroke) -> list[Point]:
+    """The polyline a stroke is drawn along: its points, or the outline of its shape."""
+    if stroke.shape == FREEHAND or len(stroke.points) < 2:  # noqa: PLR2004
+        return stroke.points
+    (x0, y0, _), (x1, y1, _) = stroke.points[0], stroke.points[-1]
+    p = SHAPE_PRESSURE
+    if stroke.shape == "line":
+        return [(x0, y0, p), (x1, y1, p)]
+    if stroke.shape == "arrow":
+        return _arrow(x0, y0, x1, y1)
+    if stroke.shape == "rect":
+        return [(x0, y0, p), (x1, y0, p), (x1, y1, p), (x0, y1, p), (x0, y0, p)]
+    cx, cy, rx, ry = (x0 + x1) / 2, (y0 + y1) / 2, abs(x1 - x0) / 2, abs(y1 - y0) / 2
+    return [
+        (cx + rx * math.cos(t), cy + ry * math.sin(t), p)
+        for t in (2 * math.pi * i / ELLIPSE_SEGMENTS for i in range(ELLIPSE_SEGMENTS + 1))
+    ]
+
+
+def _arrow(x0: float, y0: float, x1: float, y1: float) -> list[Point]:
+    """Shaft, then the head's two wings, drawn as one polyline through the tip."""
+    p = SHAPE_PRESSURE
+    angle = math.atan2(y1 - y0, x1 - x0)
+    head = max(ARROW_HEAD_MIN, ARROW_HEAD_SHARE * math.hypot(x1 - x0, y1 - y0))
+    wings = [
+        (
+            x1 - head * math.cos(angle + side * ARROW_HEAD_ANGLE),
+            y1 - head * math.sin(angle + side * ARROW_HEAD_ANGLE),
+            p,
+        )
+        for side in (1, -1)
+    ]
+    return [(x0, y0, p), (x1, y1, p), wings[0], (x1, y1, p), wings[1]]
+
+
+def _segment_distance(px: float, py: float, a: Point, b: Point) -> float:
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    length = dx * dx + dy * dy
+    t = 0.0 if length == 0 else max(0.0, min(1.0, ((px - a[0]) * dx + (py - a[1]) * dy) / length))
+    return math.hypot(px - (a[0] + t * dx), py - (a[1] + t * dy))
+
+
 def _near(stroke: Stroke, x: float, y: float, radius: float) -> bool:
-    return any(math.hypot(px - x, py - y) <= radius for px, py, _ in stroke.points)
+    path = outline(stroke)
+    if len(path) == 1:
+        return math.hypot(path[0][0] - x, path[0][1] - y) <= radius
+    return any(_segment_distance(x, y, a, b) <= radius for a, b in pairwise(path))
 
 
 class Ink:
@@ -154,13 +209,13 @@ class Ink:
         tool = self.tool
         width = tool.width * HIGHLIGHT_WIDTH_FACTOR if tool.highlighter else tool.width
         alpha = tool.highlight_alpha if tool.highlighter else 1.0
-        self.layers.setdefault(layer, []).append(Stroke([(x, y, pressure)], tool.color, width, alpha))
+        self.layers.setdefault(layer, []).append(Stroke([(x, y, pressure)], tool.color, width, alpha, tool.shape))
         self.changed()
 
     def finish(self, layer: str) -> None:
         """End the newest stroke: smooth it according to the tool's smoothing level."""
         strokes = self.strokes(layer)
-        if strokes and self.tool.smoothing:
+        if strokes and self.tool.smoothing and strokes[-1].shape == FREEHAND:
             strokes[-1].points = smooth(strokes[-1].points, self.tool.smoothing)
             self.changed()
 
@@ -168,6 +223,11 @@ class Ink:
         """Add a point to the newest stroke, dropping points that barely move."""
         strokes = self.strokes(layer)
         if not strokes or len(strokes[-1].points) >= MAX_POINTS_PER_STROKE:
+            return
+        if strokes[-1].shape != FREEHAND:  # a shape follows the pointer: first point and the current one
+            del strokes[-1].points[1:]
+            strokes[-1].points.append((x, y, pressure))
+            self.changed()
             return
         lx, ly, _ = strokes[-1].points[-1]
         if math.hypot(x - lx, y - ly) >= MIN_POINT_DISTANCE:
@@ -246,6 +306,7 @@ class Ink:
                     "w": s.width,
                     "a": s.alpha,
                     "p": [[round(x, 1), round(y, 1), round(p, 2)] for x, y, p in s.points],
+                    **({"s": s.shape} if s.shape != FREEHAND else {}),
                 }
                 for s in strokes
             ]
@@ -285,4 +346,11 @@ def _parse_stroke(item: object) -> Stroke | None:
     if not points or width is None or not isinstance(color, str) or not _HEX_RE.fullmatch(color):
         return None
     alpha = _num(item.get("a"))
-    return Stroke(points, color, width, 1.0 if alpha is None else max(0.0, min(alpha, 1.0)))
+    shape = item.get("s")
+    return Stroke(
+        points,
+        color,
+        width,
+        1.0 if alpha is None else max(0.0, min(alpha, 1.0)),
+        shape if shape in SHAPES else FREEHAND,
+    )

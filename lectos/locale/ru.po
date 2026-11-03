@@ -919,3 +919,27 @@ msgstr "Выход"
 
 msgid "Show or hide the menu bar (pressing Alt does the same)."
 msgstr "Показать или скрыть строку меню (то же делает клавиша Alt)."
+
+msgid "shape needs one of: {names}"
+msgstr "форма: одна из {names}"
+
+msgid "shape {name}"
+msgstr "форма {name}"
+
+msgid "Freehand"
+msgstr "От руки"
+
+msgid "Line"
+msgstr "Линия"
+
+msgid "Arrow"
+msgstr "Стрелка"
+
+msgid "Rectangle"
+msgstr "Прямоугольник"
+
+msgid "Ellipse"
+msgstr "Эллипс"
+
+msgid "What a drag draws: freehand, line, arrow, rect or ellipse (configurable as [drawing] shape)."
+msgstr "Что рисует перетаскивание: freehand, line, arrow, rect или ellipse (настраивается как [drawing] shape)."

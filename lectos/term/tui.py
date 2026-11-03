@@ -177,6 +177,7 @@ class Tui:
             "color": lambda a: self._tool("color", a),
             "width": lambda a: self._tool("width", a),
             "smooth": lambda a: self._tool("smoothing", a),
+            "shape": lambda a: self._tool("shape", a),
             "eraser-size": lambda a: self._tool("eraser_size", a),
             "highlight-alpha": lambda a: self._tool("highlight_alpha", a),
             "board-style": lambda a: self._tool("board_style", a),

@@ -60,7 +60,7 @@ Keys (arrows, Space, PageUp/PageDown, Home/End always work; vim keys are optiona
 
 Drawing, laser and chalkboard: draw on the large preview in the console with a pen (the eraser end erases); a mouse draws only after `draw on`. Ink belongs to the slide you are looking at and is stored per page; the chalkboard (`board`) has its own ink, so slide ink and board ink never mix. Everything is configurable, in `options.toml` (`[drawing]`, `[laser]`) and while presenting:
 
-- pen: `color`, `width`, `highlighter` (wide translucent strokes; `highlight-alpha`), `smooth 0..5` (smooths finished strokes), `eraser-size`, `draw`, `eraser`. Highlighter and eraser are exclusive modes; turning either off returns to the pen.
+- pen: `color`, `width`, `highlighter` (wide translucent strokes; `highlight-alpha`), `smooth 0..5` (smooths finished strokes), `shape freehand|line|arrow|rect|ellipse` (a drag then draws that shape between its ends; default `[drawing] shape`; the eraser removes a shape by touching its outline), `eraser-size`, `draw`, `eraser`. Highlighter and eraser are exclusive modes; turning either off returns to the pen.
 - history: `undo`, `redo`, `clear` (this slide or the board), `clear-all` (**every** slide and the board; a toast offers Undo, and `restore-all` brings it back), `export [FILE]` (the slides with your ink as a new PDF, plus a final page for the chalkboard if it has ink; an existing file is never overwritten, a `-2` name is used instead)
 - chalkboard: `board`, `board-style chalk|black|white|ruled|grid`
 - laser: `laser` (the dot follows the pointer over the large preview and shows on the projector), `laser-color`, `laser-size 3..30`, `laser-style dot|ring|cross`

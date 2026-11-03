@@ -12,6 +12,7 @@ from lectos.model.ink import (
     MAX_SMOOTHING,
     MIN_ERASER_RADIUS,
     MIN_HIGHLIGHT_ALPHA,
+    SHAPES,
     Ink,
     parse_color,
     parse_number,
@@ -71,6 +72,18 @@ class Tools:
         self.ink.tool.smoothing = int(value)
         self.ink.notify()
         return tr("smoothing {level}").format(level=int(value))
+
+    def shape(self, arg: str) -> str:
+        """What a drag draws: freehand, a line, an arrow, a rectangle or an ellipse."""
+        name = arg.strip().lower() or SHAPES[0]
+        if name == "none":
+            name = SHAPES[0]
+        if name not in SHAPES:
+            return tr("shape needs one of: {names}").format(names=" ".join(SHAPES))
+        self.ink.tool.shape = name
+        self.ink.tool.eraser = False
+        self.ink.notify()
+        return tr("shape {name}").format(name=name)
 
     def eraser_size(self, arg: str) -> str:
         """Eraser radius in layer units."""

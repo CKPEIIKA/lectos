@@ -65,7 +65,7 @@ def build_core(pdf: Path, caps: frozenset[str], options: Options, *, doc: PdfDoc
     ink.load(state.load(pdf, "ink"))
     pen, tool = options.drawing, ink.tool
     tool.color, tool.width, tool.highlight_alpha = pen.color, pen.width, pen.highlighter_alpha
-    tool.eraser_radius, tool.smoothing = pen.eraser_radius, pen.smoothing
+    tool.eraser_radius, tool.smoothing, tool.shape = pen.eraser_radius, pen.smoothing, pen.shape
     look = options.laser
     laser = LaserStyle(color=look.color, size=look.size, style=look.style, halo=look.halo)
     return Core(doc, deck, ink, Stage(doc, deck, ink, laser), saved)

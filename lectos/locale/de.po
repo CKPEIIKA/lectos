@@ -919,3 +919,27 @@ msgstr "Beenden"
 
 msgid "Show or hide the menu bar (pressing Alt does the same)."
 msgstr "Menüleiste ein- oder ausblenden (die Alt-Taste tut dasselbe)."
+
+msgid "shape needs one of: {names}"
+msgstr "Form: eine von {names}"
+
+msgid "shape {name}"
+msgstr "Form {name}"
+
+msgid "Freehand"
+msgstr "Freihand"
+
+msgid "Line"
+msgstr "Linie"
+
+msgid "Arrow"
+msgstr "Pfeil"
+
+msgid "Rectangle"
+msgstr "Rechteck"
+
+msgid "Ellipse"
+msgstr "Ellipse"
+
+msgid "What a drag draws: freehand, line, arrow, rect or ellipse (configurable as [drawing] shape)."
+msgstr "Was beim Ziehen gezeichnet wird: freehand, line, arrow, rect oder ellipse (einstellbar als [drawing] shape)."

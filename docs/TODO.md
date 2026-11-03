@@ -2,11 +2,24 @@
 
 Unfinished work only. Keep tasks concrete, prioritized, and verifiable. Move completed work to `DONE.md`.
 
+## P0: Xournal++/pympress-style conveniences (each one configurable in `options.toml` and, where it is a console setting, in Settings)
+
+- [x] Shape tools: line, arrow, rectangle, ellipse (`shape`, `[drawing] shape`).
+- [ ] Always-visible pen palette: colours, widths, tool buttons (pen, highlighter, eraser, shape) on the main screen; `[console] palette = true|false` and `[drawing] palette = [colours]`.
+- [ ] Text boxes on a slide (`text` tool): placed with a click, stored as ink, exported.
+- [ ] Select, move and delete strokes (`select` tool) with undo.
+- [ ] Zoom/magnifier on the audience screen (`zoom` command, key, `[projector] zoom_factor`).
+- [ ] Page-number box in the header: type a slide number or click to jump (`goto` item exists in the header table; make it an entry).
+- [ ] Per-slide timers: time spent on each slide, shown in the overview (`[console] slide_timers`).
+- [ ] Embedded media playback from the PDF (videos), opt-in `[console] media`.
+- [ ] Rebindable keys (`[keys]` table) and Settings fields for notes file names and the palette.
+- [ ] Pen pressure curve (`[drawing] pressure`), tablet button mapping, palm rejection option.
+
 ## P1: presenter features
 
 - [ ] Layout: user-defined arrangements beyond compact/wide (which panes where), and a layout for a vertical portrait screen.
 - [ ] Test with a real second monitor and a pen: fullscreen placement, pressure, eraser end, latency on heavy figures.
-- [ ] Ink: keep it attached to the right slide when the deck is recompiled and slides move (match by slide text), eraser by area instead of whole strokes, and shapes (line, arrow, rectangle).
+- [ ] Ink: keep it attached to the right slide when the deck is recompiled and slides move (match by slide text) and eraser by area instead of whole strokes.
 
 ## Terminal console follow-ups
 

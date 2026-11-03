@@ -87,6 +87,16 @@ RADIO_MENUS = {  # action -> (submenu title, ((label, value), ...)); titles and 
         noop("Smoothing"),
         ((noop("Off"), "0"), (noop("Low"), "1"), (noop("Medium"), "3"), (noop("High"), "5")),
     ),
+    "shape": (
+        noop("Shape"),
+        (
+            (noop("Freehand"), "freehand"),
+            (noop("Line"), "line"),
+            (noop("Arrow"), "arrow"),
+            (noop("Rectangle"), "rect"),
+            (noop("Ellipse"), "ellipse"),
+        ),
+    ),
     "eraser-size": (
         noop("Eraser size"),
         ((noop("Small"), "8"), (noop("Medium"), "14"), (noop("Large"), "30"), (noop("Huge"), "60")),
@@ -409,6 +419,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         return {
             "layout": self.layout_mode, "upcoming": str(self.upcoming), "target": str(self.timer.target_min),
             "color": self._color_name(tool.color), "width": str(int(tool.width)), "smooth": str(tool.smoothing),
+            "shape": tool.shape,
             "eraser-size": str(round(tool.eraser_radius)), "board-style": self.deck.board_style,
             "laser-color": self._color_name(laser.color), "laser-size": str(round(laser.size)),
             "laser-style": laser.style,
@@ -497,7 +508,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             item(tr("Highlighter"), "highlighter"),
         ))  # fmt: skip
         drawing.append_section(None, _menu_section(
-            _menu_radios("color"), _menu_radios("width"), _menu_radios("smooth"),
+            _menu_radios("color"), _menu_radios("width"), _menu_radios("smooth"), _menu_radios("shape"),
             _menu_radios("eraser-size"), _menu_radios("board-style"),
         ))  # fmt: skip
         drawing.append_section(None, _menu_section(
@@ -1114,6 +1125,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             "color": lambda a: self._tool(t.color, a),
             "width": lambda a: self._tool(t.width, a),
             "smooth": lambda a: self._tool(t.smoothing, a),
+            "shape": lambda a: self._tool(t.shape, a),
             "eraser-size": lambda a: self._tool(t.eraser_size, a),
             "highlight-alpha": lambda a: self._tool(t.highlight_alpha, a),
             "board": lambda a: self._cmd_board(c.flag(a, deck.board)),
