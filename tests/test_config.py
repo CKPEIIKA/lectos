@@ -245,7 +245,7 @@ def test_keys_zoom_and_slide_timer_options(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("text", "message"),
     [
-        ('[keys]\nx = 3\n', "command line"),
+        ("[keys]\nx = 3\n", "command line"),
         ('[keys]\nxx = "next"\n', "one printable"),
         ('[keys]\n5 = "next"\n', "counts"),
         ('[keys]\nx = "nonsense"\n', "unknown command"),

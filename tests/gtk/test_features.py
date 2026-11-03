@@ -552,7 +552,11 @@ def test_the_palette_and_notes_names_can_be_changed_and_are_remembered(rig, buil
     assert saved["palette"] == ["red", "blue"] and saved["notes_names"] == ["speaker.md", "body.tex"]
     again = build_rig().console
     again.restore(saved)
-    assert (again.palette, again.notes_names, again.slide_times_on) == (("red", "blue"), ("speaker.md", "body.tex"), False)
+    assert (again.palette, again.notes_names, again.slide_times_on) == (
+        ("red", "blue"),
+        ("speaker.md", "body.tex"),
+        False,
+    )
     assert again.tools.zoom_factor == 4.0
     again.restore({"palette": ["nope"], "notes_names": ["a/b"], "slide_times_on": 3, "zoom_factor": True})
     assert again.palette == ("red", "blue") and again.notes_names == ("speaker.md", "body.tex")

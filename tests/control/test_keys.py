@@ -1,4 +1,3 @@
-
 from lectos.control.keys import Action, Vim, check_binding
 
 
