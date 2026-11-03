@@ -12,6 +12,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
+from lectos import state
 from lectos.i18n import tr
 from lectos.paths import NOTES_SUFFIXES, discover, notes_for
 
@@ -163,8 +164,16 @@ class StartWindow(Adw.ApplicationWindow):
         return self._apply_drop(paths) if paths is not None else False
 
     # ---- file dialogs ----
+    def _start_folder(self) -> Path | None:
+        """Where the file chooser opens: next to what is chosen already, else where it last picked something."""
+        chosen = self.slides or self.notes
+        return chosen.parent if chosen is not None else state.last_folder()
+
     def _dialog(self, title: str, patterns: tuple[str, ...] = ()) -> Gtk.FileDialog:
         dialog = Gtk.FileDialog(title=title)
+        folder = self._start_folder()
+        if folder is not None:
+            dialog.set_initial_folder(Gio.File.new_for_path(str(folder)))
         if patterns:
             files = Gtk.FileFilter(name=", ".join(patterns))
             for pattern in patterns:
@@ -194,4 +203,6 @@ class StartWindow(Adw.ApplicationWindow):
             return  # cancelled
         path = file.get_path()
         if path is not None:
-            apply(Path(path))
+            picked = Path(path)
+            state.remember_folder(picked if apply == self.set_folder else picked.parent)
+            apply(picked)

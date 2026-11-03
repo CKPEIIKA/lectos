@@ -45,6 +45,7 @@ SMALL_H = 130
 WIDE_ROW_H = 220
 WIDE_SLIDE_SHARE = 0.58
 PANE_TOLERANCE_PX = 8
+NOTES_MIN_PX = 240  # the notes pane never shrinks below this, whatever splitter position was saved
 TOAST_S = 3
 RESIZE_DEBOUNCE_MS = 120
 TOGGLE_CSS = {  # header toggles that light up while active
@@ -472,7 +473,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
                 menu.append_section(tr(title), section(*items))
 
         item = self._menu_item
-        timer, drawing, laser = Gio.Menu(), Gio.Menu(), Gio.Menu()
+        timer, drawing, laser, view = Gio.Menu(), Gio.Menu(), Gio.Menu(), Gio.Menu()
         timer.append_section(None, section(
             item(tr("Start or pause"), "timer", "t"), item(tr("Reset"), "timer-reset"),
         ))  # fmt: skip
@@ -481,7 +482,9 @@ class ConsoleWindow(Adw.ApplicationWindow):
             item(tr("Mouse drawing"), "draw", "d"), item(tr("Eraser"), "eraser", "e"),
             item(tr("Highlighter"), "highlighter"),
         ))  # fmt: skip
-        drawing.append_section(None, section(radios("color"), radios("width"), radios("smooth"), radios("eraser-size")))
+        drawing.append_section(None, section(
+            radios("color"), radios("width"), radios("smooth"), radios("eraser-size"), radios("board-style"),
+        ))  # fmt: skip
         drawing.append_section(None, section(
             item(tr("Undo"), "undo", "u"), item(tr("Redo"), "redo", "<Shift>u"), item(tr("Clear slide ink"), "clear"),
             item(tr("Erase all ink"), "clear-all"), item(tr("Restore erased ink"), "restore-all"),
@@ -502,17 +505,17 @@ class ConsoleWindow(Adw.ApplicationWindow):
             item(tr("Freeze"), "freeze", "z"), item(tr("Blackout"), "blackout", "b"),
             item(tr("Chalkboard"), "board", "<Shift>b"), item(tr("Projector fullscreen"), "projector-fullscreen", "f"),
         ))  # fmt: skip
-        menu.append_section(tr("Tools"), section(
-            (tr("Timer"), timer), (tr("Drawing"), drawing), (tr("Laser pointer"), laser), radios("board-style"),
-        ))  # fmt: skip
-        menu.append_section(tr("View"), section(
+        view.append_section(None, section(
             radios("layout"), radios("upcoming"), item(tr("Quick drawing layout"), "sketch", "s"),
             item(tr("Console fullscreen"), "fullscreen", "<Shift>f"),
         ))  # fmt: skip
+        view.append_section(None, section(item(tr("Vim keys"), "vim"), item(tr("Show slide for note hits"), "show-slide")))
+        menu.append_section(tr("Tools"), section(
+            (tr("Timer"), timer), (tr("Drawing"), drawing), (tr("Laser pointer"), laser), (tr("View"), view),
+        ))  # fmt: skip
         menu.append_section(None, section(
             item(tr("Edit notes of this slide…"), "edit", "<Shift>e"), item(tr("Open other slides…"), "open"),
-            item(tr("Settings…"), "settings", "<Shift>s"), item(tr("Vim keys"), "vim"),
-            item(tr("Show slide for note hits"), "show-slide"), item(tr("Help and shortcuts"), "help", "question"),
+            item(tr("Settings…"), "settings", "<Shift>s"), item(tr("Help and shortcuts"), "help", "question"),
         ))  # fmt: skip
         return menu
 
@@ -612,13 +615,15 @@ class ConsoleWindow(Adw.ApplicationWindow):
             buffer=self.buffer, editable=False, cursor_visible=False, wrap_mode=Gtk.WrapMode.WORD_CHAR,
             left_margin=12, right_margin=12, vexpand=True,
         )  # fmt: skip
-        scroller = Gtk.ScrolledWindow(child=view)
+        scroller = Gtk.ScrolledWindow(child=view, min_content_width=NOTES_MIN_PX)
         scroller.get_vadjustment().connect("value-changed", lambda _a: self._mark_dirty())
         self.view, self.scroller = view, scroller
         return scroller
 
     def _paned(self, start: Gtk.Widget, end: Gtk.Widget, position: int) -> Gtk.Paned:
-        paned = Gtk.Paned(start_child=start, end_child=end, position=position, resize_start_child=True)
+        paned = Gtk.Paned(
+            start_child=start, end_child=end, position=position, resize_start_child=True, shrink_end_child=False
+        )
         paned.connect("notify::position", lambda p, _s: self._remember_pane(p))
         self.paned = paned
         return paned
@@ -1213,9 +1218,12 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._drop_dialog = dialog
         dialog.present()
 
+    def notes_file(self) -> Path | None:
+        """The current notes file (None for none, or notes that are not a file, like PDF annotations)."""
+        return getattr(self.notes, "path", None) or getattr(self.notes, "tex", None)
+
     def _notes_name(self) -> str:
-        """File name of the current notes ('' for none, or notes that are not a file, like PDF annotations)."""
-        path = getattr(self.notes, "path", None) or getattr(self.notes, "tex", None)
+        path = self.notes_file()
         return path.name if path is not None else ""
 
     def _drop_response(self, dialog: Adw.MessageDialog, response: str, path: Path, slides: bool) -> None:

@@ -58,3 +58,22 @@ def test_edited_notes_get_their_own_markdown_file_per_pdf(tmp_path: Path, monkey
     assert state.edits_path(one).suffix == ".md"
     assert state.edits_path(one) != state.edits_path(two)
     assert state.edits_path(one).parent == state.state_path(one).parent
+
+
+def test_the_last_chooser_folder_is_remembered_while_it_exists(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    assert state.last_folder() is None
+    folder = tmp_path / "lectures"
+    folder.mkdir()
+    state.remember_folder(folder)
+    assert state.last_folder() == folder
+    folder.rmdir()
+    assert state.last_folder() is None
+
+
+def test_remembering_a_folder_never_fails_the_caller(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    blocked = tmp_path / "state"
+    blocked.write_text("a file where the folder should be")
+    monkeypatch.setenv("XDG_STATE_HOME", str(blocked))
+    state.remember_folder(tmp_path)
+    assert state.last_folder() is None

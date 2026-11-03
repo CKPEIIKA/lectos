@@ -386,3 +386,14 @@ def test_the_launcher_uses_pdf_annotations_as_notes_and_warns_about_zathura(
     zathura.begin(pdf_maker([SPLIT_PAGE], name="s.pdf"), None)
     assert "notes pages" in current(zathura).console.last_message
     current(zathura).finish()
+
+
+def test_a_saved_splitter_position_wider_than_the_window_keeps_the_notes_visible(rig, pump) -> None:
+    c = rig.console
+    c.present()
+    pump(0.3)
+    c._pane["compact"] = 5000  # saved while the window was much wider
+    c.layout_mode = "compact"
+    c._apply_layout(force=True)
+    pump(0.3)
+    assert c.scroller.get_width() >= 200

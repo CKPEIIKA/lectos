@@ -196,6 +196,9 @@ class Launcher:
     def show_start(self) -> None:
         """The window that chooses slides and notes."""
         start = StartWindow(self.app, lambda pdf, notes: self._chosen(start, pdf, notes), self.options.notes_names)
+        if self.session is not None:  # opening other slides starts from what is open now
+            start.set_slides(self.session.pdf)
+            start.set_notes(self.session.console.notes_file())
         start.present()
 
     def _chosen(self, start: StartWindow, pdf: Path, notes: Path | None) -> None:

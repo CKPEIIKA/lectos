@@ -354,11 +354,15 @@ def test_the_launcher_switches_to_other_slides_and_a_failing_projector_ends_it(r
         app_module, "StartWindow", lambda app, on_start, names: seen.append(real_start(app, on_start, names)) or seen[-1]
     )
     launcher.show_start()
+    assert (seen[0].slides, seen[0].notes) == (PDF, None)  # starts from what is open now
     seen[0].on_start(PDF, EXAMPLES / "notes.md")  # the user picked slides and notes
     second = launcher.session
     assert second is not None
     assert second is not first
     assert second.console.notes is not None
+    launcher.show_start()
+    assert seen[1].notes == EXAMPLES / "notes.md"
+    seen[1].destroy()
     second.finish()
     launcher.session = None
     seen[0].on_start(PDF, None)  # with nothing presented yet there is nothing to finish

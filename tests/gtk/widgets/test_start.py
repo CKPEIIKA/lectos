@@ -185,3 +185,18 @@ def test_the_default_window_shows_everything_without_scrolling_and_may_shrink(st
     assert natural + header <= window.get_default_size()[1]
     assert scroller.get_propagate_natural_height() is False  # a small window scrolls instead of growing
     assert scroller.get_policy()[0] == Gtk.PolicyType.NEVER
+
+
+def test_the_chooser_opens_next_to_the_chosen_files_else_where_it_last_picked(started, deck, tmp_path) -> None:
+    window, _calls = started
+    assert window._dialog("x").get_initial_folder() is None
+    window._picked(FakeDialog(str(deck / "slides.pdf")), "result", window.set_slides)
+    window.slides = window.notes = None
+    assert window._start_folder() == deck  # remembered from the pick
+    assert window._dialog("x").get_initial_folder().get_path() == str(deck)
+    window.set_slides(tmp_path / "elsewhere" / "a.pdf")
+    assert window._dialog("x").get_initial_folder().get_path() == str(tmp_path / "elsewhere")
+    window.slides = None
+    window.notes = None
+    window._picked(FakeDialog(str(deck)), "result", window.set_folder)
+    assert window._start_folder() == deck  # a picked folder is remembered itself
