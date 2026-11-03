@@ -72,3 +72,35 @@ def test_escape_discards_and_ctrl_enter_saves(editor) -> None:
     assert window._on_key(None, Gdk.KEY_Return, 0, NONE) is False  # a plain Enter is a new line
     assert window._on_key(None, Gdk.KEY_Return, 0, Gdk.ModifierType.CONTROL_MASK) is True
     assert saved == ["first words"]
+
+
+def test_the_new_rows_run_their_commands(settings) -> None:
+    window, c = settings
+    assert window.zoom_row.get_value() == c.zoom_factor
+    window.zoom_row.set_value(3.5)
+    assert c.zoom_factor == 3.5
+    window.palette_rows["green"].set_active(False)
+    assert "green" not in c.palette
+    for color in list(c.palette)[1:]:
+        window.palette_rows[color].set_active(False)
+    window.palette_rows[c.palette[0]].set_active(False)
+    assert len(c.palette) == 1  # the last colour cannot be switched off
+    assert window.palette_rows[c.palette[0]].get_active() is True
+    c.palette = ("red", "blue")  # changed behind the window's back
+    window.sync()
+    assert [k for k, row in window.palette_rows.items() if row.get_active()] == ["red", "blue"]
+    window.notes_row.set_text("typing")
+    window.sync()  # nothing changed in the console: the typed text stays
+    assert window.notes_row.get_text() == "typing"
+    window.notes_row.set_text("speaker.md body.tex")
+    window.notes_row.emit("apply")
+    assert c.notes_names == ("speaker.md", "body.tex")
+    c.notes_names = ("other.md",)
+    window.sync()
+    assert window.notes_row.get_text() == "other.md"
+    window.notes_row.set_text("")
+    window.notes_row.emit("apply")
+    assert c.notes_names == ()
+    window.behaviour_rows["slide-times"].set_active(False)
+    window.behaviour_rows["menubar"].set_active(True)
+    assert (c.slide_times_on, c.menubar_on) == (False, True)

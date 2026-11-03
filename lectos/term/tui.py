@@ -16,10 +16,10 @@ from typing import TYPE_CHECKING
 from lectos import state
 from lectos.config import Options
 from lectos.control import commands, search
-from lectos.control.keys import Vim, key_for
+from lectos.control.keys import Vim
 from lectos.control.toolcmds import TOOL_FLAG_MESSAGES, Tools
 from lectos.i18n import noop, tr
-from lectos.model.deck import Deck, Timer, format_seconds, parse_minutes, schedule_summary
+from lectos.model.deck import Deck, SlideTimes, Timer, format_seconds, parse_minutes, schedule_summary
 from lectos.model.ink import Ink
 from lectos.notes import markdown
 from lectos.notes.beamer import open_notes
@@ -41,7 +41,8 @@ LOOP_S = 0.25
 SAVE_EVERY_S = 2.0
 GTK_ONLY = {
     "laser", "laser-color", "laser-size", "laser-style", "show-slide", "vim", "projector-fullscreen", "export",
-    "layout", "upcoming", "previous", "sketch", "panel", "settings", "edit", "open", "export-ink",
+    "layout", "upcoming", "previous", "sketch", "panel", "settings", "edit", "open", "export-ink", "palette",
+    "notes-names",
 }  # fmt: skip
 HINT = noop(" :command  /search  o overview  l/h next/prev  j/k scroll  ? help")  # shown through tr()
 PANEL_ROWS = 9  # most rows the search-result panel takes at the bottom
@@ -78,9 +79,13 @@ class Tui:
         self.ink, self.stage = ink, stage
         self._help_names: list[str] = []
         self.deck = deck or Deck(pdf.pages)
-        self.tools = Tools(ink, self.deck, stage.laser) if ink is not None and stage is not None else None
+        self.tools = (
+            Tools(ink, self.deck, stage.laser, options.zoom_factor) if ink is not None and stage is not None else None
+        )
         self.timer = Timer(target_min=options.target_min)
-        self.vim = Vim()
+        self.times = SlideTimes()
+        self.slide_times_on = options.slide_timers
+        self.vim = Vim(options.keys)
         self.mode = "normal"  # normal | command | list
         self.buffer = ""
         self.list_title, self.items, self.cursor = "", [], 0
@@ -107,17 +112,23 @@ class Tui:
 
     # ---- state ----
     def _on_deck(self) -> None:
+        self.times.mark(self.clock(), self.deck.page, self.timer.running)
         self.dirty = True
         self._follow = True
 
     def snapshot(self) -> dict[str, object]:
         """State to save: pages, freeze, timer and notes position."""
-        return {**self.deck.to_dict(), "timer": self.timer.to_dict(), "notes_scroll": self.scroll}
+        return {
+            **self.deck.to_dict(), "timer": self.timer.to_dict(), "slide_times": self.times.to_dict(),
+            "notes_scroll": self.scroll,
+        }  # fmt: skip
 
     def restore(self, saved: dict[str, object]) -> None:
         """Apply saved state."""
         self.deck.load(saved)
         self.timer.load(saved.get("timer"))
+        self.times.load(saved.get("slide_times"))
+        self.vim.restore(saved.get("keys"), self._commands)
         scroll = saved.get("notes_scroll")
         if isinstance(scroll, int | float) and not isinstance(scroll, bool):
             self.scroll, self._follow = max(0, int(scroll)), False
@@ -160,8 +171,13 @@ class Tui:
             "overview": lambda _a: self._open_overview(),
             "main": lambda _a: self._close_overlay(),
             "freeze": lambda a: deck.set_frozen(c.flag(a, deck.frozen)),
-            "timer": lambda _a: self.timer.toggle(self.clock()),
-            "timer-reset": lambda _a: self.timer.reset(),
+            "timer": lambda _a: self._toggle_timer(),
+            "timer-reset": lambda _a: self._reset_timer(),
+            "zoom": lambda a: self._tool("zoom", a),
+            "zoom-factor": lambda a: self._tool("set_zoom_factor", a),
+            "slide-times": lambda a: setattr(self, "slide_times_on", c.flag(a, self.slide_times_on)),
+            "bind": lambda a: self._set_message(self.vim.rebind(a, self._commands)),
+            "unbind": lambda a: self._set_message(self.vim.unbind(a, self._commands)),
             "target": self._cmd_target,
             "fullscreen": lambda a: self._fullscreen(c.flag(a, self._fullscreen_on)),
             "help": self._cmd_help,
@@ -240,10 +256,10 @@ class Tui:
     def _cmd_help(self, arg: str) -> None:
         """``help``: a list of every command usable here (pick one to start typing it); ``help NAME``: one line."""
         if arg:
-            self.message = commands.describe(arg, key_for)
+            self.message = commands.describe(arg, self.vim.key_for)
             return
         unsupported = {name for name, cap in COMMAND_CAPS.items() if cap not in self.projector.caps}
-        entries = commands.help_entries([*self._commands, *GTK_ONLY], key_for)
+        entries = commands.help_entries([*self._commands, *GTK_ONLY], self.vim.key_for)
         self._help_names = [usage.split()[0] for _, usage, _, _ in entries]
         items = [
             f"{tr(group):<10} {usage:<32} {tr(text)}"
@@ -256,6 +272,15 @@ class Tui:
 
     def _help_pick(self, index: int) -> None:
         self._open_prompt(f":{self._help_names[index]} ")
+
+    def _toggle_timer(self) -> None:
+        now = self.clock()
+        self.timer.toggle(now)
+        self.times.mark(now, self.deck.page, self.timer.running)
+
+    def _reset_timer(self) -> None:
+        self.timer.reset()
+        self.times.clear()
 
     def _cmd_goto(self, arg: str) -> None:
         if arg.isdigit():
@@ -321,11 +346,18 @@ class Tui:
         except PdfToolError as exc:
             self.message = str(exc)
             return
-        items = [
-            f"{i + 1:>4}  {next((ln.strip() for ln in t.splitlines() if ln.strip()), tr('(blank)'))}"
-            for i, t in enumerate(texts)
-        ]
+        items = [self._overview_line(i, text) for i, text in enumerate(texts)]
         self._open_list(tr("overview"), items, self.deck.view, self._goto_index)
+
+    def _overview_line(self, page: int, text: str) -> str:
+        first = next((ln.strip() for ln in text.splitlines() if ln.strip()), tr("(blank)"))
+        return f"{page + 1:>4}  {self._time_text(page)}{first}"
+
+    def _time_text(self, page: int) -> str:
+        """The time spent on a slide as an overview column (blank for slides not yet shown, or when switched off)."""
+        self.times.mark(self.clock(), self.deck.page, self.timer.running)
+        seconds = self.times.of(page)
+        return f"{format_seconds(seconds):>8}  " if self.slide_times_on and seconds >= 1 else ""
 
     def _goto_index(self, index: int) -> None:
         self.deck.goto(index)
@@ -376,7 +408,7 @@ class Tui:
         if action.name in ("command-line", "search") and action.count is None:
             self._open_prompt(":" if action.name == "command-line" else "/")
         else:
-            self.execute(f"{action.name} {'' if action.count is None else action.count}")
+            self.execute(action.line)
 
     def _key_command(self, key: str) -> None:
         if key in ("Esc", "C-c"):
@@ -413,7 +445,8 @@ class Tui:
 
     # ---- rendering ----
     def tick(self) -> None:
-        """Periodic work: reload changed notes."""
+        """Periodic work: reload changed notes, credit the projected slide with the running time."""
+        self.times.mark(self.clock(), self.deck.page, self.timer.running)
         self.poll_notes()
 
     def render(self, width: int, height: int) -> list[str]:

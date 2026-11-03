@@ -578,3 +578,37 @@ def test_unmapped_keys_do_nothing_in_the_command_line_and_in_lists(tmp_path: Pat
     tui.execute("help")
     tui.handle_key("F5")  # a list ignores keys it does not know
     assert tui.items
+
+
+def test_zoom_slide_times_and_key_binding_in_the_terminal_console(tmp_path: Path) -> None:
+    tui, _, clock = make(tmp_path, GTK_CAPS, with_ink=True)
+    tui.execute("zoom")
+    assert tui.deck.zoom == 2.0
+    tui.execute("zoom-factor 3")
+    assert "zoom factor 3" in tui.message
+    tui.execute("timer")
+    clock.now += 90
+    tui.execute("next")
+    clock.now += 4
+    tui.execute("timer")
+    tui.execute("overview")
+    assert tui.items[0].split()[:2] == ["1", "1:30"]
+    assert tui.items[1].split()[:2] == ["2", "0:04"]
+    tui.execute("slide-times off")
+    tui.execute("overview")
+    assert "1:30" not in tui.items[0]
+    saved = tui.snapshot()
+    tui.execute("timer-reset")
+    assert tui.times.of(0) == 0.0
+    tui.execute("main")
+    tui.execute("bind y next 2")
+    tui.handle_key("y")
+    assert tui.deck.view == 3
+    tui.execute("unbind y")
+    assert "is free" in tui.message
+    tui.restore({**saved, "keys": {"y": "last"}})
+    assert tui.times.of(0) == 90.0
+    tui.handle_key("y")
+    assert tui.deck.view == tui.deck.pages - 1
+    tui.execute("palette red")
+    assert "needs the GTK console" in tui.message

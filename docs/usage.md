@@ -116,3 +116,11 @@ See `examples/options.toml` and `examples/standby.svg`. Status: tested with unit
 ## Crashes
 
 If lectos dies from a fatal signal (segmentation fault, abort), the Python traceback is appended to `$XDG_STATE_HOME/lectos/crash.log`. A window that vanishes without an entry there was closed by the compositor or by a Wayland/GPU error: start lectos from a terminal and keep its output (`lectos 2> lectos.log`).
+
+## Zoom, time per slide, keys and more settings
+
+- **Zoom**: `zoom` (key `x`, *Laser pointer > Zoom*) magnifies the audience's slide around the laser dot, or the middle if the laser is off; `zoom in`, `zoom out`, `zoom 3` and `zoom off` adjust it, and a new projected slide ends it. The console preview shows the same view. `zoom-factor X` (or Settings, or `[projector] zoom_factor = 2.5`) sets what a plain `zoom` uses. Needs the GTK projector.
+- **Time per slide**: while the timer runs, the projected slide is credited with the time. The overview shows it under each thumbnail (terminal console: a column); `slide-times off`, Settings or `[console] slide_timers = false` hides it; `timer-reset` clears it. Saved with the session.
+- **Rebindable keys**: `[keys]` in `options.toml` maps a single character to a command line (`x = "color red"`, `h = ""` frees a key); `bind KEY COMMAND [ARGS]` and `unbind KEY` do it while running and are remembered for the deck. Digits, `g` and `G` are reserved. Menu key hints keep showing the default keys.
+- **Settings** now also has: time per slide, menu bar, zoom factor, pen palette colours and notes file names. `palette red blue` and `notes-names speaker.md body.tex` are the commands behind them; values changed there are remembered per deck and only when they differ from `options.toml`.
+

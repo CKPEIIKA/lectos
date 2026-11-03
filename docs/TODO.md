@@ -8,11 +8,9 @@ Unfinished work only. Keep tasks concrete, prioritized, and verifiable. Move com
 - [x] Always-visible pen palette (panel `palette`, `[drawing] palette`). Still open: custom `#rrggbb` swatches.
 - [ ] Text boxes on a slide (`text` tool): placed with a click, stored as ink, exported.
 - [ ] Select, move and delete strokes (`select` tool) with undo.
-- [ ] Zoom/magnifier on the audience screen (`zoom` command, key, `[projector] zoom_factor`).
 - [ ] Page-number box in the header: type a slide number or click to jump (`goto` item exists in the header table; make it an entry).
-- [ ] Per-slide timers: time spent on each slide, shown in the overview (`[console] slide_timers`).
 - [ ] Embedded media playback from the PDF (videos), opt-in `[console] media`.
-- [ ] Rebindable keys (`[keys]` table) and Settings fields for notes file names and the palette.
+- [ ] Menu key hints follow rebound keys; an editor for `[keys]` in Settings; zoom that follows the pointer or pans.
 - [ ] Pen pressure curve (`[drawing] pressure`), tablet button mapping, palm rejection option.
 
 ## P0: crash audit follow-up
@@ -36,7 +34,7 @@ Unfinished work only. Keep tasks concrete, prioritized, and verifiable. Move com
 
 - [ ] Notes on separate PDF pages (`\setbeameroption{show notes}`) and a separate notes PDF; embedded video/media.
 
-- [ ] Timing statistics: time spent on each slide, broken down by sections.
+- [ ] Timing statistics broken down by sections; flag slides far over their share.
 
 ## Follow-ups
 

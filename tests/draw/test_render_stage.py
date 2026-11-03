@@ -150,3 +150,39 @@ def test_a_single_point_stroke_is_drawn_as_a_dot() -> None:
     render.draw_strokes(cr, [Stroke([(50.0, 50.0, 1.0)], "#000000", 20.0)], 1.0)
     assert pixel(surface, 50, 50)[0] < 30
     assert pixel(surface, 5, 5) == (255, 255, 255)
+
+
+def test_zoom_magnifies_around_a_point_and_keeps_input_mapping_exact() -> None:
+    deck = Deck(1)
+    stage = Stage(FakeDoc(), deck, Ink())
+    scale, ox, oy = stage.fit(0, 200, 150)
+    assert (scale, ox, oy) == (0.5, 0.0, 0.0)
+    deck.set_zoom(2.0, (0.5, 0.5))
+    zoomed, zx, zy = stage.fit(0, 200, 150)
+    assert (zoomed, zx, zy) == (1.0, -100.0, -75.0)  # the middle of the slide stays in the middle
+    assert stage.to_layer(0, 200, 150, 100.0, 75.0) == pytest.approx((200.0, 150.0))
+    deck.set_zoom(2.0, (0.0, 0.0))  # a corner cannot be centred: the view stays inside the slide
+    assert stage.fit(0, 200, 150) == (1.0, 0.0, 0.0)
+    deck.set_zoom(2.0, (1.0, 1.0))
+    assert stage.fit(0, 200, 150) == (1.0, -200.0, -150.0)
+
+
+def test_zoom_draws_the_magnified_slide_with_constant_pen_and_laser_size() -> None:
+    deck, ink = Deck(1), Ink()
+    ink.layers[slide_layer(0)] = [Stroke([(300.0, 150.0, 1.0), (301.0, 150.0, 1.0)], COLORS["red"], 20.0)]
+    deck.set_laser_on(True)
+    deck.set_laser((0.5, 0.5))
+    deck.set_zoom(2.0, (0.5, 0.5))
+    stage = Stage(FakeDoc(), deck, ink)
+    surface, cr = surface_and_context()
+    assert stage.draw(cr, 0, 200, 100) == stage.fit(0, 200, 100)
+    assert close(pixel(surface, 100, 50), (255, 26, 26))  # the laser sits in the middle: it is what is magnified
+    assert pixel(surface, 199, 99) == (255, 255, 255)  # the slide fills the screen: no letterbox
+
+
+def test_zoom_wider_than_the_content_centres_it() -> None:
+    deck = Deck(1)
+    stage = Stage(FakeDoc(), deck, Ink())
+    deck.set_zoom(1.2, (0.0, 0.5))
+    scale, ox, _ = stage.fit(0, 800, 100)  # the slide is narrower than the window even magnified: centred
+    assert ox + scale * PAGE_W / 2 == pytest.approx(400.0)

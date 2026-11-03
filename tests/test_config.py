@@ -228,3 +228,32 @@ def test_the_palette_is_a_list_of_known_colour_names(tmp_path: Path) -> None:
     ):
         with pytest.raises(ConfigError, match=message):
             config.load(write(tmp_path, text))
+
+
+def test_keys_zoom_and_slide_timer_options(tmp_path: Path) -> None:
+    opts = config.load(
+        write(
+            tmp_path,
+            '[keys]\nx = "color red"\nh = ""\n[projector]\nzoom_factor = 3\n[console]\nslide_timers = false\n',
+        )
+    )
+    assert opts.keys == {"x": "color red", "h": ""}
+    assert (opts.zoom_factor, opts.slide_timers) == (3.0, False)
+    assert Options().keys == {} and Options().slide_timers is True
+
+
+@pytest.mark.parametrize(
+    ("text", "message"),
+    [
+        ('[keys]\nx = 3\n', "command line"),
+        ('[keys]\nxx = "next"\n', "one printable"),
+        ('[keys]\n5 = "next"\n', "counts"),
+        ('[keys]\nx = "nonsense"\n', "unknown command"),
+        ("keys = 3\n", "must be a table"),
+        ("[projector]\nzoom_factor = 99\n", "zoom_factor"),
+        ("[projector]\nzoom = 2\n", "unknown option"),
+    ],
+)
+def test_invalid_keys_and_zoom_options(tmp_path: Path, text: str, message: str) -> None:
+    with pytest.raises(ConfigError, match=message):
+        config.load(write(tmp_path, text))

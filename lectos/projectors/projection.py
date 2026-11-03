@@ -8,7 +8,7 @@ from typing import Protocol
 from lectos.i18n import tr
 from lectos.model.deck import Deck
 
-GTK_CAPS = frozenset({"blackout", "board", "ink", "laser"})  # what our own window can show
+GTK_CAPS = frozenset({"blackout", "board", "ink", "laser", "zoom"})  # what our own window can show
 
 
 class Projector(Protocol):
@@ -86,7 +86,7 @@ COMMAND_CAPS = {
     "clear": "ink", "undo": "ink", "redo": "ink", "draw": "ink", "eraser": "ink", "color": "ink", "width": "ink",
     "highlighter": "ink", "smooth": "ink", "eraser-size": "ink", "highlight-alpha": "ink", "clear-all": "ink",
     "restore-all": "ink", "sketch": "ink", "board-style": "board",
-    "laser-color": "laser", "laser-size": "laser", "laser-style": "laser",
+    "zoom": "zoom", "laser-color": "laser", "laser-size": "laser", "laser-style": "laser",
 }  # fmt: skip
 
 

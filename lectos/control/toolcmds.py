@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from lectos.i18n import noop, tr
-from lectos.model.deck import Deck
+from lectos.model.deck import MAX_ZOOM, MIN_ZOOM, Deck
 from lectos.model.ink import (
     COLORS,
     MAX_ERASER_RADIUS,
@@ -21,6 +21,8 @@ from lectos.model.ink import (
 from lectos.model.style import BOARD_STYLES, LASER_STYLES, MAX_LASER_PX, MIN_LASER_PX, LaserStyle
 
 COLOR_NAMES = ", ".join(COLORS)
+DEFAULT_ZOOM = 2.0
+ZOOM_STEP = 1.5
 TOOL_FLAG_MESSAGES = {  # (off, on); translate with tr() when shown
     "mouse_draw": (noop("mouse drawing off"), noop("mouse drawing on")),
 }
@@ -29,8 +31,8 @@ TOOL_FLAG_MESSAGES = {  # (off, on); translate with tr() when shown
 class Tools:
     """Changes the pen, the chalkboard background and the laser look, and says what happened."""
 
-    def __init__(self, ink: Ink, deck: Deck, laser: LaserStyle) -> None:
-        self.ink, self.deck, self.laser = ink, deck, laser
+    def __init__(self, ink: Ink, deck: Deck, laser: LaserStyle, zoom_factor: float = DEFAULT_ZOOM) -> None:
+        self.ink, self.deck, self.laser, self.zoom_factor = ink, deck, laser, zoom_factor
 
     def color(self, arg: str) -> str:
         """Pen colour."""
@@ -136,6 +138,27 @@ class Tools:
         self.laser.style = arg
         self.deck.touch()
         return tr("laser shape {name}").format(name=arg)
+
+    def zoom(self, arg: str) -> str:
+        """Magnify the audience's view around the laser (or the middle); no argument toggles."""
+        word = arg.strip().lower()
+        deck, now = self.deck, self.deck.zoom
+        factor = {"": 1.0 if now > 1.0 else self.zoom_factor, "on": self.zoom_factor, "off": 1.0,
+                  "in": now * ZOOM_STEP, "out": now / ZOOM_STEP}.get(word)  # fmt: skip
+        if factor is None:
+            factor = parse_number(word, MIN_ZOOM, MAX_ZOOM)
+        if factor is None:
+            return tr("zoom needs on, off, in, out or {low}..{high}").format(low=MIN_ZOOM, high=MAX_ZOOM)
+        deck.set_zoom(factor, deck.laser if deck.laser is not None else deck.zoom_at)
+        return tr("zoom x{factor}").format(factor=f"{deck.zoom:.1f}") if deck.zoom > 1.0 else tr("zoom off")
+
+    def set_zoom_factor(self, arg: str) -> str:
+        """The magnification a plain ``zoom`` uses."""
+        value = parse_number(arg, MIN_ZOOM, MAX_ZOOM)
+        if value is None:
+            return tr("zoom-factor needs {low}..{high}").format(low=MIN_ZOOM, high=MAX_ZOOM)
+        self.zoom_factor = value
+        return tr("zoom factor {value}").format(value=f"{value:g}")
 
     def clear_all(self) -> str:
         """Erase every stroke on every slide and the chalkboard."""

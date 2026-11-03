@@ -794,9 +794,6 @@ msgstr "Лента слайдов (широкая раскладка)"
 msgid "Status bar"
 msgstr "Строка состояния"
 
-msgid "h j k l, :, / and friends"
-msgstr "h j k l, :, / и подобные"
-
 msgid "Show the slide for note hits"
 msgstr "Показывать слайд для найденных заметок"
 
@@ -946,3 +943,96 @@ msgstr "Что рисует перетаскивание: freehand, line, arrow,
 
 msgid "Pen palette"
 msgstr "Палитра пера"
+
+msgid "Magnify the audience's slide around the laser dot (or the middle); a new slide ends it (key x)."
+msgstr "Увеличить слайд для зала вокруг лазерной точки (или центра); новый слайд отменяет увеличение (клавиша x)."
+
+msgid "How much a plain zoom magnifies, 1.2..8 ([projector] zoom_factor)."
+msgstr "Во сколько раз увеличивает обычный zoom, 1.2..8 ([projector] zoom_factor)."
+
+msgid "Show the time spent on each slide in the overview."
+msgstr "Показывать время на каждом слайде в обзоре."
+
+msgid "Make a vim key run a command, e.g. bind x color red; bind KEY alone frees it ([keys] in options.toml)."
+msgstr "Назначить клавише vim команду, например bind x color red; bind КЛАВИША без команды освобождает её ([keys] в options.toml)."
+
+msgid "Free a vim key."
+msgstr "Освободить клавишу vim."
+
+msgid "Pen colours offered under the slide, e.g. palette red blue black ([drawing] palette)."
+msgstr "Цвета пера под слайдом, например palette red blue black ([drawing] palette)."
+
+msgid "File names looked for as notes beside the slides ([files] notes_names)."
+msgstr "Имена файлов, которые ищутся как заметки рядом со слайдами ([files] notes_names)."
+
+msgid "bind KEY COMMAND: make a key run a command (bind KEY alone frees it)"
+msgstr "bind КЛАВИША КОМАНДА: назначить клавише команду (bind КЛАВИША без команды освобождает её)"
+
+msgid "key {key} is free"
+msgstr "клавиша {key} свободна"
+
+msgid "bind: {problem}"
+msgstr "bind: {problem}"
+
+msgid "key {key} runs {line}"
+msgstr "клавиша {key} выполняет {line}"
+
+msgid "zoom off"
+msgstr "увеличение выключено"
+
+msgid "zoom factor {value}"
+msgstr "коэффициент увеличения {value}"
+
+msgid "zoom needs on, off, in, out or {low}..{high}"
+msgstr "zoom принимает on, off, in, out или {low}..{high}"
+
+msgid "zoom x{factor}"
+msgstr "увеличение x{factor}"
+
+msgid "zoom-factor needs {low}..{high}"
+msgstr "zoom-factor принимает {low}..{high}"
+
+msgid "notes-names: file names, not paths"
+msgstr "notes-names: имена файлов, а не пути"
+
+msgid "Zoom"
+msgstr "Увеличение"
+
+msgid "Time per slide in the overview"
+msgstr "Время на слайд в обзоре"
+
+msgid "notes files: {names}"
+msgstr "файлы заметок: {names}"
+
+msgid "palette: one or more of {names}"
+msgstr "palette: один или несколько из {names}"
+
+msgid "none"
+msgstr "нет"
+
+msgid "h j k l, :, / and friends (change keys: :bind, [keys] in options.toml)"
+msgstr "h j k l, :, / и другие (менять клавиши: :bind, [keys] в options.toml)"
+
+msgid "Time per slide"
+msgstr "Время на слайд"
+
+msgid "shown in the overview, counted while the timer runs"
+msgstr "показывается в обзоре, считается пока идёт таймер"
+
+msgid "File ... Help; pressing Alt does the same"
+msgstr "Файл ... Справка; клавиша Alt делает то же самое"
+
+msgid "Zoom factor"
+msgstr "Коэффициент увеличения"
+
+msgid "Notes file names (separated by spaces)"
+msgstr "Имена файлов заметок (через пробел)"
+
+msgid "Files"
+msgstr "Файлы"
+
+msgid "a key is one printable character"
+msgstr "клавиша — один печатный символ"
+
+msgid "{key} is used for counts and gg/G"
+msgstr "{key} используется для чисел и gg/G"

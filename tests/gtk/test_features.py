@@ -475,3 +475,89 @@ def test_a_recompiled_deck_with_fewer_slides_leaves_every_view_valid(build_rig, 
     c.execute("last")
     pump(0.2)
     assert c.deck.view == 1
+
+
+# ---- zoom, slide times, key bindings, palette and notes names ----
+def test_zoom_magnifies_the_audience_and_is_gated_by_the_projector(rig, plain) -> None:
+    c = rig.console
+    c.execute("zoom")
+    assert c.deck.zoom == 2.0
+    assert c._flag("zoom") is True
+    c.execute("zoom-factor 3")
+    c.execute("zoom off")
+    c.execute("zoom")
+    assert c.deck.zoom == 3.0
+    c.execute("next")  # a new slide ends the magnification
+    assert c.deck.zoom == 1.0
+    plain.console.execute("zoom")
+    assert plain.console.deck.zoom == 1.0
+    assert "not supported" in plain.console.last_message
+
+
+def test_the_overview_shows_the_time_spent_on_each_slide(rig, monkeypatch) -> None:
+    c = rig.console
+    clock = [1000.0]
+    monkeypatch.setattr("lectos.gtk.console.time.time", lambda: clock[0])
+    c.execute("timer")
+    clock[0] += 75
+    c.execute("next")
+    clock[0] += 5
+    c.execute("timer")
+    c.show_overview()
+    assert c._thumb_labels[0].get_label() == "1  1:15"
+    assert c._thumb_labels[1].get_label() == "2  0:05"
+    assert c._thumb_labels[2].get_label() == "3"
+    c.execute("slide-times off")
+    assert c._thumb_labels[0].get_label() == "1"
+    c.execute("slide-times on")
+    c._tick()  # an open overview keeps up
+    clock[0] += 1
+    c.execute("timer-reset")
+    assert c.times.of(0) == 0.0
+
+
+def test_bind_changes_a_key_and_is_remembered_until_the_file_changes(rig, build_rig) -> None:
+    c = rig.console
+    c.execute("bind y color red")
+    assert c.vim.feed("y").line == "color red"
+    c.execute("bind 5 next")
+    assert "counts" in c.last_message
+    c.execute("unbind h")
+    assert c.vim.feed("h") is None
+    saved = c.snapshot()
+    assert saved["keys"] == {"y": "color red", "h": ""}
+    again = build_rig().console
+    again.restore(saved)
+    assert again.vim.feed("y").line == "color red"
+    assert again.vim.feed("h") is None
+    again.restore({"keys": "junk"})
+
+
+def test_the_palette_and_notes_names_can_be_changed_and_are_remembered(rig, build_rig) -> None:
+    c = rig.console
+    c.execute("layout compact")
+    c.execute("palette red, blue")
+    assert list(c._drawbar.swatches) == ["red", "blue"]
+    c.execute("palette nope")
+    assert "palette:" in c.last_message
+    c.execute("notes-names speaker.md, body.tex")
+    assert c.notes_names == ("speaker.md", "body.tex")
+    c.execute("notes-names")
+    assert "speaker.md body.tex" in c.last_message
+    c.execute("notes-names ../x.md")
+    assert c.notes_names == ("speaker.md", "body.tex")
+    c.execute("slide-times off")
+    c.execute("zoom-factor 4")
+    saved = c.snapshot()
+    assert saved["palette"] == ["red", "blue"] and saved["notes_names"] == ["speaker.md", "body.tex"]
+    again = build_rig().console
+    again.restore(saved)
+    assert (again.palette, again.notes_names, again.slide_times_on) == (("red", "blue"), ("speaker.md", "body.tex"), False)
+    assert again.tools.zoom_factor == 4.0
+    again.restore({"palette": ["nope"], "notes_names": ["a/b"], "slide_times_on": 3, "zoom_factor": True})
+    assert again.palette == ("red", "blue") and again.notes_names == ("speaker.md", "body.tex")
+    c.execute("palette default")
+    c.execute("notes-names none")
+    assert c.notes_names == ()
+    assert "palette" not in c.snapshot()
+    assert "notes_names" not in c.snapshot()

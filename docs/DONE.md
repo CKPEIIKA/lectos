@@ -2,6 +2,13 @@
 
 Completed work only. Record meaningful outcomes and validation evidence, newest first.
 
+## 2026-11-03: zoom, time per slide, rebindable keys, more Settings
+
+- `zoom` (key `x`, `[projector] zoom_factor`): the shared `Stage` magnifies around the laser or the middle, so input mapping and pen size stay exact; ends on a new projected slide; gated by a `zoom` projector capability.
+- `SlideTimes` credits the projected slide while the timer runs; overview labels and a terminal column (`slide-times`, `[console] slide_timers`); saved with the session.
+- `[keys]`, `bind`, `unbind`: keys run any command line; fixed on the way: a configured `""` now really frees a key.
+- Settings rows: time per slide, menu bar, zoom factor, palette colours, notes file names (`palette`, `notes-names` commands). 536 tests, 100% coverage, quality gate green.
+
 ## 2026-11-03: crash audit
 
 - Randomized stress runs of the real app (layouts, panels, resize, fullscreen, slide replacement, extra windows, rebuilt PDFs; 40 runs of 500 steps, seeds 100-139, plus earlier batches) found and fixed: a scroll-restore idle callback holding the adjustment of an already destroyed text view (aborts GTK in `gtktextview.c`); drawing into a zero-size area (cairo "invalid matrix"); the palette forcing a negative header width at narrow window sizes.

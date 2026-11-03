@@ -195,7 +195,8 @@ class Launcher:
 
     def show_start(self) -> None:
         """The window that chooses slides and notes."""
-        start = StartWindow(self.app, lambda pdf, notes: self._chosen(start, pdf, notes), self.options.notes_names)
+        names = self.session.console.notes_names if self.session is not None else self.options.notes_names
+        start = StartWindow(self.app, lambda pdf, notes: self._chosen(start, pdf, notes), names)
         if self.session is not None:  # opening other slides starts from what is open now
             start.set_slides(self.session.pdf)
             start.set_notes(self.session.console.notes_file())
@@ -220,7 +221,7 @@ class Launcher:
             else:
                 print(f"lectos: {message}", file=sys.stderr)
             return
-        notes = notes_for(pdf, self.options.notes_names)
+        notes = notes_for(pdf, session.console.notes_names if session is not None else self.options.notes_names)
         source = open_notes(notes, pdf) if notes else None
         if session is not None:
             session.finish()

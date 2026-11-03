@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from lectos.i18n import tr
 from lectos.model.style import BOARD_STYLES, DEFAULT_BOARD
@@ -14,6 +14,9 @@ SECONDS_PER_HOUR = 3600
 SECONDS_PER_MINUTE = 60
 DEFAULT_TARGET_MIN = 60
 ON_TIME_S = 30  # within this of the plan counts as on time
+MIN_ZOOM = 1.2
+MAX_ZOOM = 8.0
+CENTER = (0.5, 0.5)
 MAX_TARGET_MIN = 24 * 60
 _DURATION_RE = re.compile(r"(?:(?P<h>\d+)h)?(?:(?P<m>\d+)m?)?|(?P<hh>\d+):(?P<mm>\d{2})")
 
@@ -137,6 +140,48 @@ class Timer:
         self.running = data.get("running") is True
 
 
+@dataclass
+class SlideTimes:
+    """Seconds the timer ran while each slide was projected; the clock is passed in so it stays testable."""
+
+    totals: dict[int, float] = field(default_factory=dict)
+    page: int = 0
+    stamp: float | None = None  # when the running timer last credited ``page``; None while paused
+
+    def mark(self, now: float, page: int, running: bool) -> None:
+        """Credit the time since the last mark to the slide that was shown, then follow ``page`` and ``running``."""
+        if self.stamp is not None:
+            self.totals[self.page] = self.totals.get(self.page, 0.0) + max(0.0, now - self.stamp)
+        self.page = page
+        self.stamp = now if running else None
+
+    def of(self, page: int) -> float:
+        """Seconds credited to a zero-based slide so far."""
+        return self.totals.get(page, 0.0)
+
+    def clear(self) -> None:
+        """Forget everything (the timer was reset)."""
+        self.totals, self.stamp = {}, None
+
+    def to_dict(self) -> dict[str, object]:
+        """Serializable form."""
+        return {"totals": {str(p): s for p, s in self.totals.items()}, "page": self.page, "stamp": self.stamp}
+
+    def load(self, data: object) -> None:
+        """Restore from ``to_dict`` output; malformed input leaves the record unchanged."""
+        if not isinstance(data, dict) or not isinstance(data.get("totals"), dict):
+            return
+        page, stamp = data.get("page"), data.get("stamp")
+        if not isinstance(page, int) or isinstance(page, bool) or (stamp is not None and _number(stamp) is None):
+            return
+        totals = {
+            int(k): v
+            for k, v in data["totals"].items()
+            if isinstance(k, str) and k.isdigit() and _number(v) is not None and v >= 0
+        }
+        self.totals, self.page, self.stamp = totals, page, None if stamp is None else float(stamp)
+
+
 class Deck:
     """Page state shared by the projector and the console."""
 
@@ -150,6 +195,9 @@ class Deck:
         self.board_style = DEFAULT_BOARD
         self.laser_on = False
         self.laser: tuple[float, float] | None = None  # fractions of the shown content
+        self.zoom = 1.0  # magnification of the shown content on the audience screen; 1 is off
+        self.zoom_at = CENTER  # the point (fractions of the content) kept in the middle of the screen
+        self._zoom_page = 0
         self._subscribers: list[Callable[[], None]] = []
 
     def subscribe(self, callback: Callable[[], None]) -> None:
@@ -157,6 +205,8 @@ class Deck:
         self._subscribers.append(callback)
 
     def _changed(self) -> None:
+        if self.zoom != 1.0 and self.page != self._zoom_page:
+            self.zoom = 1.0  # a magnified detail belongs to its slide
         for callback in self._subscribers:
             callback()
 
@@ -221,6 +271,13 @@ class Deck:
         if self.laser_on or position is None:
             self.laser = position
             self._changed()
+
+    def set_zoom(self, factor: float, at: tuple[float, float] | None = None) -> None:
+        """Magnify the shown content (1 = off) around ``at``, or around the middle."""
+        self.zoom = 1.0 if factor < MIN_ZOOM else min(factor, MAX_ZOOM)
+        self.zoom_at = at or CENTER
+        self._zoom_page = self.page
+        self._changed()
 
     def set_pages(self, pages: int) -> None:
         """Adopt a new page count (PDF recompiled), clamping both pages."""

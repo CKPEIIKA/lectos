@@ -18,7 +18,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 
 from lectos.config import Header, Options
 from lectos.control import commands, search
-from lectos.control.keys import Vim, key_for
+from lectos.control.keys import Vim
 from lectos.control.toolcmds import TOOL_FLAG_MESSAGES, Tools
 from lectos.draw.stage import Stage
 from lectos.gtk.inkinput import InkInput
@@ -31,7 +31,7 @@ from lectos.gtk.widgets.settings import SettingsWindow
 from lectos.i18n import noop, tr
 from lectos.model import header as header_items
 from lectos.model import layout as layouts
-from lectos.model.deck import Timer, format_seconds, parse_minutes, schedule_summary
+from lectos.model.deck import SlideTimes, Timer, format_seconds, parse_minutes, schedule_summary
 from lectos.model.ink import COLORS
 from lectos.notes import markdown, mathimg
 from lectos.notes.beamer import open_notes
@@ -177,9 +177,11 @@ class ConsoleWindow(Adw.ApplicationWindow):
         )
         self.stage, self.doc, self.deck, self.ink = stage, doc, stage.deck, stage.ink
         self.projector, self.notes = projector, notes
-        self.tools = Tools(self.ink, self.deck, stage.laser)
+        self.tools = Tools(self.ink, self.deck, stage.laser, options.zoom_factor)
         self.timer = Timer(target_min=options.target_min)
-        self.vim = Vim()
+        self.times = SlideTimes()
+        self.slide_times_on = options.slide_timers
+        self.vim = Vim(options.keys)
         self.vim_on = options.vim
         self.show_slide_on = True
         self.layout_mode = options.layout
@@ -189,6 +191,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._alt_alone = False
         self._alive = True  # False once the window is gone: deferred callbacks must not touch its widgets
         self.palette = options.drawing.palette
+        self.notes_names = options.notes_names
+        self.options = options
         self.opener: Callable[[], None] | None = None  # set by the application: choose other slides
         self.on_replace_slides: Callable[[Path], None] | None = None
         self.hits: list[search.Hit] = []
@@ -214,6 +218,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._resize_pending = False
         self._overview_origin: int | None = None
         self._overview_busy = False
+        self._thumb_labels: list[Gtk.Label] = []
         self._pane: dict[str, int] = {}
         self._sections: list[Section] = []
         self._textures: dict[mathimg.Formula, Gdk.Texture] = {}
@@ -426,7 +431,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             "draw": tool.mouse_draw, "eraser": tool.eraser, "highlighter": tool.highlighter,
             "projector-fullscreen": self.projector.is_fullscreen(), "fullscreen": self.is_fullscreen(),
             "vim": self.vim_on, "show-slide": self.show_slide_on, "sketch": self.layout_active == layouts.DRAW,
-            "menubar": self.menubar.get_visible(),
+            "menubar": self.menubar.get_visible(), "zoom": self.deck.zoom > 1.0, "slide-times": self.slide_times_on,
         }[name]  # fmt: skip
 
     def _radio_value(self, name: str) -> str:
@@ -447,7 +452,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         )  # fmt: skip
         flags = (
             "freeze", "blackout", "board", "laser", "draw", "eraser", "highlighter",
-            "projector-fullscreen", "fullscreen", "vim", "show-slide", "sketch", "menubar",
+            "projector-fullscreen", "fullscreen", "vim", "show-slide", "sketch", "menubar", "zoom", "slide-times",
         )  # fmt: skip
         for name in plain:
             action = Gio.SimpleAction.new(name, None)
@@ -533,7 +538,9 @@ class ConsoleWindow(Adw.ApplicationWindow):
         drawing.append_section(None, _menu_section(
             item(tr("Export annotated PDF"), "export"), item(tr("Export this drawing layer (PNG)"), "export-ink"),
         ))  # fmt: skip
-        laser.append_section(None, _menu_section(item(tr("Laser pointer"), "laser", "p")))
+        laser.append_section(
+            None, _menu_section(item(tr("Laser pointer"), "laser", "p"), item(tr("Zoom"), "zoom", "x"))
+        )
         _menu_inline(laser, "laser-color", "laser-size", "laser-style")
 
         view.append_section(None, _menu_section(
@@ -541,7 +548,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         ))  # fmt: skip
         view.append_section(None, _menu_section(
             item(tr("Vim keys"), "vim"), item(tr("Show slide for note hits"), "show-slide"),
-            item(tr("Menu bar"), "menubar"),
+            item(tr("Menu bar"), "menubar"), item(tr("Time per slide in the overview"), "slide-times"),
         ))  # fmt: skip
         return timer, drawing, laser, view
 
@@ -782,6 +789,16 @@ class ConsoleWindow(Adw.ApplicationWindow):
         column.append(self._scrolled_bar(self._drawbar))
         return column
 
+    @property
+    def menubar_on(self) -> bool:
+        """Whether the menu bar is shown (a settings row reads it)."""
+        return self.menubar.get_visible()
+
+    @property
+    def zoom_factor(self) -> float:
+        """What a plain ``zoom`` magnifies by."""
+        return self.tools.zoom_factor
+
     def pen_color_name(self) -> str:
         """Name of the current pen colour (empty for a custom one)."""
         return self._color_name(self.ink.tool.color)
@@ -935,6 +952,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
 
     # ---- deck and timer ----
     def _on_deck(self) -> None:
+        self.times.mark(time.time(), self.deck.page, self.timer.running)
         proj = f" (proj {self.deck.page + 1})" if self.deck.page != self.deck.view else ""
         self.pos.set_label(f"{self.deck.view + 1} / {self.deck.pages}{proj}")
         self.title_pos.set_label(f"{self.deck.view + 1} / {self.deck.pages}")
@@ -961,17 +979,95 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.set_focus(None)
 
     def _toggle_timer(self) -> None:
-        self.timer.toggle(time.time())
+        now = time.time()
+        self.timer.toggle(now)
+        self.times.mark(now, self.deck.page, self.timer.running)
         self._mark_dirty()
         self._tick()
 
     def _reset_timer(self) -> None:
         self.timer.reset()
+        self.times.clear()
         self._mark_dirty()
         self._tick()
 
+    def _rebound(self, message: str) -> None:
+        self._set_status(message)
+        self._mark_dirty()
+
+    def _cmd_palette(self, arg: str) -> None:
+        """``palette red blue ...`` chooses the pen colours offered under the slide; ``palette default`` resets."""
+        names = tuple(dict.fromkeys(arg.replace(",", " ").split()))
+        if names == ("default",):
+            names = self.options.drawing.palette
+        if not names or any(n not in COLORS for n in names):
+            self._set_status(tr("palette: one or more of {names}").format(names=" ".join(COLORS)))
+            return
+        self.palette = names
+        self._apply_layout(force=True)  # the palette is part of the page
+        self._sync_actions()
+        self._mark_dirty()
+
+    def _cmd_notes_names(self, arg: str) -> None:
+        """``notes-names a.md b.tex`` sets the file names looked for beside the slides; ``none`` clears them."""
+        if not arg.strip():
+            self._set_status(tr("notes files: {names}").format(names=" ".join(self.notes_names) or tr("none")))
+            return
+        names = tuple(dict.fromkeys(arg.replace(",", " ").split()))
+        if names == ("none",):
+            names = ()
+        if any(Path(n).name != n for n in names):
+            self._set_status(tr("notes-names: file names, not paths"))
+            return
+        self.notes_names = names
+        self._sync_actions()
+        self._mark_dirty()
+        self._set_status(tr("notes files: {names}").format(names=" ".join(names) or tr("none")))
+
+    def _changed_preferences(self) -> dict[str, object]:
+        """Preferences that differ from ``options.toml``; only those are remembered, so editing the file still works."""
+        opt, changed = self.options, {}
+        if self.vim.changed:
+            changed["keys"] = dict(self.vim.changed)
+        if self.palette != opt.drawing.palette:
+            changed["palette"] = list(self.palette)
+        if self.notes_names != opt.notes_names:
+            changed["notes_names"] = list(self.notes_names)
+        if self.slide_times_on != opt.slide_timers:
+            changed["slide_times_on"] = self.slide_times_on
+        if self.tools.zoom_factor != opt.zoom_factor:
+            changed["zoom_factor"] = self.tools.zoom_factor
+        return changed
+
+    def _restore_preferences(self, saved: dict[str, object]) -> None:
+        self.vim.restore(saved.get("keys"), self._commands)
+        palette, names = saved.get("palette"), saved.get("notes_names")
+        if isinstance(palette, list) and palette and all(i in COLORS for i in palette):
+            self.palette = tuple(palette)
+        if isinstance(names, list) and all(isinstance(i, str) and Path(i).name == i for i in names):
+            self.notes_names = tuple(names)
+        if isinstance(saved.get("slide_times_on"), bool):
+            self.slide_times_on = bool(saved["slide_times_on"])
+        factor = saved.get("zoom_factor")
+        if isinstance(factor, int | float) and not isinstance(factor, bool):
+            self.tools.set_zoom_factor(str(factor))
+
+    def _cmd_slide_times(self, on: bool) -> None:
+        self._set_pref("slide_times_on", on)
+        self._refresh_thumb_times()
+
+    def _refresh_thumb_times(self) -> None:
+        """Put the time spent on each slide under its overview thumbnail (blank for slides never shown)."""
+        for page, label in enumerate(self._thumb_labels):
+            seconds = self.times.of(page)
+            shown = self.slide_times_on and seconds >= 1
+            label.set_label(f"{page + 1}  {format_seconds(seconds)}" if shown else str(page + 1))
+
     def _tick(self) -> bool:
         now = time.time()
+        self.times.mark(now, self.deck.page, self.timer.running)
+        if self.stack.get_visible_child_name() == "overview":
+            self._refresh_thumb_times()
         self.timer_label.set_label(
             f"{format_seconds(self.timer.elapsed(now))} / {format_seconds(self.timer.left(now))}"
         )
@@ -1013,8 +1109,10 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.search_revealer.set_reveal_child(False)
         if self._flow_pages() != self.doc.pages:
             self.flow.remove_all()
+            self._thumb_labels = []
             for i in range(self.doc.pages):
                 self.flow.append(self._thumbnail(i))
+        self._refresh_thumb_times()
         self._overview_origin = self.deck.view
         current = self.flow.get_child_at_index(self.deck.view)
         if current is not None:
@@ -1043,6 +1141,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         area = Gtk.DrawingArea(content_width=THUMB_W, content_height=THUMB_H)
         area.set_draw_func(lambda _a, cr, w, h: self._draw_page(cr, page, w, h))  # drawn only when visible
         label = Gtk.Label(label=str(page + 1), halign=Gtk.Align.CENTER, valign=Gtk.Align.END)
+        self._thumb_labels.append(label)
         overlay = Gtk.Overlay(child=area)
         overlay.add_overlay(label)
         return overlay
@@ -1076,7 +1175,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         intro = tr("Open the command line with : (Tab completes), or pick a row to start typing it.")
         page.add(Adw.PreferencesGroup(title=tr("Commands"), description=intro))
         groups: dict[str, Adw.PreferencesGroup] = {}
-        for group, usage, text, key in commands.help_entries(self._commands, key_for):
+        for group, usage, text, key in commands.help_entries(self._commands, self.vim.key_for):
             if group not in groups:
                 groups[group] = Adw.PreferencesGroup(title=tr(group))
                 page.add(groups[group])
@@ -1165,6 +1264,13 @@ class ConsoleWindow(Adw.ApplicationWindow):
             "board": lambda a: self._cmd_board(c.flag(a, deck.board)),
             "board-style": lambda a: self._tool(t.board_style, a),
             "laser": lambda a: deck.set_laser_on(c.flag(a, deck.laser_on)),
+            "zoom": lambda a: self._tool(t.zoom, a),
+            "zoom-factor": lambda a: self._tool(t.set_zoom_factor, a),
+            "slide-times": lambda a: self._cmd_slide_times(c.flag(a, self.slide_times_on)),
+            "bind": lambda a: self._rebound(self.vim.rebind(a, self._commands)),
+            "unbind": lambda a: self._rebound(self.vim.unbind(a, self._commands)),
+            "palette": self._cmd_palette,
+            "notes-names": self._cmd_notes_names,
             "laser-color": lambda a: self._tool(t.laser_color, a),
             "laser-size": lambda a: self._tool(t.laser_size, a),
             "laser-style": lambda a: self._tool(t.laser_style, a),
@@ -1426,7 +1532,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
 
     def _cmd_help(self, arg: str) -> None:
         if arg:
-            self._set_status(commands.describe(arg, key_for))
+            self._set_status(commands.describe(arg, self.vim.key_for))
         else:
             self.show_help()
 
@@ -1494,8 +1600,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         if action.name == "command-line":
             self._open_command()
         elif action.name != "pending":
-            arg = "" if action.count is None else str(action.count)
-            self.execute(f"{action.name} {arg}")
+            self.execute(action.line)
         return True
 
     def _open_command(self, prefill: str = ":") -> None:
@@ -1630,6 +1735,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         return {
             **self.deck.to_dict(),
             "timer": self.timer.to_dict(),
+            "slide_times": self.times.to_dict(),
             "notes_scroll": self.scroller.get_vadjustment().get_value() if self.scroller else 0.0,
             "panes": dict(self._pane),
             "layout": self.layout_mode,
@@ -1637,11 +1743,14 @@ class ConsoleWindow(Adw.ApplicationWindow):
             "upcoming": self.upcoming,
             "vim": self.vim_on,
             "hidden": sorted(self.hidden),
+            **self._changed_preferences(),
         }
 
     def restore(self, saved: dict[str, object]) -> None:
         """Apply saved console state (the deck is restored separately)."""
         self.timer.load(saved.get("timer"))
+        self.times.load(saved.get("slide_times"))
+        self._restore_preferences(saved)
         self._restore_view(saved)
         scroll = saved.get("notes_scroll")
         if isinstance(scroll, int | float) and not isinstance(scroll, bool):

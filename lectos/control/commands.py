@@ -156,6 +156,14 @@ HELP = {
     "laser": Help(
         "laser [on|off]", noop("Laser pointer: the dot follows the mouse over the large preview."), noop("Laser")
     ),
+    "zoom": Help(
+        "zoom [on|off|in|out|X]",
+        noop("Magnify the audience's slide around the laser dot (or the middle); a new slide ends it (key x)."),
+        noop("Laser"),
+    ),
+    "zoom-factor": Help(
+        "zoom-factor X", noop("How much a plain zoom magnifies, 1.2..8 ([projector] zoom_factor)."), noop("Laser")
+    ),
     "laser-color": Help("laser-color NAME|#rrggbb", noop("Laser colour."), noop("Laser")),
     "laser-size": Help("laser-size N", noop("Laser radius in pixels, 3..30."), noop("Laser")),
     "laser-style": Help("laser-style NAME", noop("Laser shape: dot, ring, cross."), noop("Laser")),
@@ -178,6 +186,25 @@ HELP = {
     ),
     "settings": Help("settings", noop("Open the settings window."), noop("View")),
     "menubar": Help("menubar [on|off]", noop("Show or hide the menu bar (pressing Alt does the same)."), noop("View")),
+    "slide-times": Help(
+        "slide-times [on|off]", noop("Show the time spent on each slide in the overview."), noop("Timer")
+    ),
+    "bind": Help(
+        "bind KEY COMMAND [ARGS]",
+        noop("Make a vim key run a command, e.g. bind x color red; bind KEY alone frees it ([keys] in options.toml)."),
+        noop("General"),
+    ),
+    "unbind": Help("unbind KEY", noop("Free a vim key."), noop("General")),
+    "palette": Help(
+        "palette NAMES|default",
+        noop("Pen colours offered under the slide, e.g. palette red blue black ([drawing] palette)."),
+        noop("Drawing"),
+    ),
+    "notes-names": Help(
+        "notes-names [NAMES|none]",
+        noop("File names looked for as notes beside the slides ([files] notes_names)."),
+        noop("Notes"),
+    ),
     "vim": Help("vim [on|off]", noop("Vim-style keys in the GTK console."), noop("View")),
     "open": Help("open", noop("Choose other slides, notes or a folder."), noop("General")),
     "help": Help("help [COMMAND]", noop("List every command with usage and keys, or describe one."), noop("General")),

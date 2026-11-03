@@ -66,3 +66,31 @@ def test_shape_command_picks_what_a_drag_draws(tools: Tools) -> None:
     assert tools.shape("") == "shape freehand"
     assert tools.shape("spiral").startswith("shape needs one of: freehand line arrow rect ellipse")
     assert tools.ink.tool.shape == "freehand"
+
+
+def test_zoom_toggles_steps_and_takes_a_factor(tools: Tools) -> None:
+    deck = tools.deck
+    assert tools.zoom("") == "zoom x2.0"
+    assert (deck.zoom, deck.zoom_at) == (2.0, (0.5, 0.5))
+    assert tools.zoom("") == "zoom off"
+    assert tools.zoom("in") == "zoom x1.5"
+    assert tools.zoom("in") == "zoom x2.2"
+    assert tools.zoom("out") == "zoom x1.5"
+    assert tools.zoom("out") == "zoom off"
+    assert tools.zoom("3") == "zoom x3.0"
+    assert tools.zoom("on") == "zoom x2.0"
+    assert tools.zoom("off") == "zoom off"
+    assert tools.zoom("0.5").startswith("zoom needs")
+    assert tools.zoom("nope").startswith("zoom needs")
+
+
+def test_zoom_aims_at_the_laser_and_the_factor_is_adjustable(tools: Tools) -> None:
+    tools.deck.set_laser_on(True)
+    tools.deck.set_laser((0.2, 0.7))
+    tools.zoom("")
+    assert tools.deck.zoom_at == (0.2, 0.7)
+    assert tools.set_zoom_factor("4") == "zoom factor 4"
+    tools.zoom("off")
+    assert tools.zoom("") == "zoom x4.0"
+    assert tools.set_zoom_factor("99").startswith("zoom-factor needs")
+    assert tools.zoom_factor == 4.0

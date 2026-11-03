@@ -5,14 +5,16 @@ from __future__ import annotations
 import os
 import re
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from lectos import i18n
+from lectos.control.commands import HELP
+from lectos.control.keys import check_binding
 from lectos.model import header as header_items
 from lectos.model import layout as layouts
 from lectos.model import style
-from lectos.model.deck import MAX_TARGET_MIN, parse_minutes
+from lectos.model.deck import MAX_TARGET_MIN, MAX_ZOOM, MIN_ZOOM, parse_minutes
 from lectos.model.ink import (
     COLORS,
     FREEHAND,
@@ -100,6 +102,9 @@ class Options:
     upcoming: int = layouts.DEFAULT_UPCOMING
     notes_pages: str = "auto"  # where Beamer's second-screen notes sit on a page: auto none left right
     menubar: bool = False  # show the File ... Help menu bar at startup; Alt toggles it
+    slide_timers: bool = True  # show the time spent on each slide in the overview ([console] slide_timers)
+    zoom_factor: float = 2.0  # what a plain ``zoom`` magnifies by ([projector] zoom_factor)
+    keys: dict[str, str] = field(default_factory=dict)  # extra or changed vim keys ([keys]: key = "command line")
     notes_names: tuple[str, ...] = ()  # extra notes file names looked for next to the slides ([files] notes_names)
     hidden: tuple[str, ...] = ()  # console panels hidden at startup: notes audience next strip status
     language: str = "auto"  # "auto" reads the environment, or "en" / "ru"
@@ -177,6 +182,18 @@ def _notes_names(section: dict[str, object]) -> tuple[str, ...]:
     if any(Path(i).name != i for i in raw):
         raise ConfigError("[files] notes_names holds file names, not paths")
     return tuple(dict.fromkeys(raw))
+
+
+def _keys(section: dict[str, object]) -> dict[str, str]:
+    bindings: dict[str, str] = {}
+    for key, line in section.items():
+        if not isinstance(line, str):
+            raise ConfigError(f'[keys] {key} must be a command line (or "" to free the key)')
+        problem = check_binding(key, line, HELP)
+        if problem:
+            raise ConfigError(f"[keys] {key}: {problem}")
+        bindings[key] = line.strip()
+    return bindings
 
 
 def _hidden(section: dict[str, object]) -> tuple[str, ...]:
@@ -300,12 +317,16 @@ def _layout_mode(section: dict[str, object]) -> str:
 
 def parse(data: dict[str, object], base: Path) -> Options:
     """Validate parsed TOML; relative image paths resolve against ``base``."""
-    unknown = sorted(set(data) - {"blackout", "console", "ui", "header", "drawing", "laser", "files"})
+    unknown = sorted(
+        set(data) - {"blackout", "console", "ui", "header", "drawing", "laser", "files", "keys", "projector"}
+    )
     if unknown:
         raise ConfigError(f"unknown section [{unknown[0]}]")
     black = _section(data, "blackout", {"image", "text", "background", "text_color"})
     console = _section(
-        data, "console", {"vim", "target_min", "layout", "previous", "upcoming", "hide", "notes_pages", "menubar"}
+        data,
+        "console",
+        {"vim", "target_min", "layout", "previous", "upcoming", "hide", "notes_pages", "menubar", "slide_timers"},
     )
     head = _section(data, "header", {"start", "title", "end"})
     draw = _section(
@@ -315,6 +336,10 @@ def parse(data: dict[str, object], base: Path) -> Options:
     )
     pointer = _section(data, "laser", {"color", "size", "style", "halo"})
     files = _section(data, "files", {"notes_names"})
+    audience = _section(data, "projector", {"zoom_factor"})
+    keys = data.get("keys", {})
+    if not isinstance(keys, dict):
+        raise ConfigError("[keys] must be a table")
     ui = _section(data, "ui", {"console", "projector", "language"})
     target = _target(console)
     return Options(
@@ -335,6 +360,9 @@ def parse(data: dict[str, object], base: Path) -> Options:
         hidden=_hidden(console),
         notes_pages=_notes_pages(console),
         menubar=_typed(console, "menubar", bool, Options.menubar, "[console] "),
+        slide_timers=_typed(console, "slide_timers", bool, Options.slide_timers, "[console] "),
+        zoom_factor=_number_option(audience, "zoom_factor", Options.zoom_factor, (MIN_ZOOM, MAX_ZOOM), "[projector] "),
+        keys=_keys(keys),
         notes_names=_notes_names(files),
         language=_choice(ui, "language", ("auto", *i18n.LANGUAGES)) or "auto",
         console=_choice(ui, "console", CONSOLES),

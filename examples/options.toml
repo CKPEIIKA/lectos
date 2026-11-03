@@ -14,6 +14,7 @@ target_min = 90                # default lecture length: minutes (90) or a lengt
 layout = "auto"                # "compact" (notebook), "wide" (big screen), "draw" (quick drawing) or "auto" by window width
 previous = 3                   # filmstrip (wide layout): slides before the current one, 0..8
 upcoming = 8                   # filmstrip (wide layout): slides after the current one, 0..16
+slide_timers = true             # show the time spent on each slide in the overview
 hide = []                      # console parts to hide at startup: "notes" "audience" "next" "strip" "status"
 
 [drawing]
@@ -42,3 +43,9 @@ end = ["layout", "freeze", "blackout", "menu"]
 # language = "auto"     # "auto" (from LANG), "en" or "ru"
 # console = "gtk"        # "gtk" or "tui" (terminal)
 # projector = "gtk"      # "gtk" (our window) or "zathura"
+
+[projector]
+zoom_factor = 2.0               # what a plain "zoom" magnifies by, 1.2..8
+
+# [keys]                        # vim keys: one character = a command line ("" frees a key)
+# x = "color red"

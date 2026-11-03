@@ -33,6 +33,13 @@ class Slides(Protocol):
         """Paint the page fitted to the area and return the fit used."""
 
 
+def _keep_inside(low: float, high: float, span: float, center: float) -> float:
+    """Centre of a window ``span`` wide that stays within [low, high]; a window wider than that centres it."""
+    if high - low <= span:
+        return (low + high) / 2
+    return min(max(center, low + span / 2), high - span / 2)
+
+
 class Stage:
     """Draws ``page`` as a slide, or the chalkboard when ``deck.board`` is on."""
 
@@ -49,22 +56,45 @@ class Stage:
         return render.BOARD_SIZE if self.deck.board else self.doc.page_size(page)
 
     def fit(self, page: int, width: int, height: int) -> tuple[float, float, float]:
-        """Scale and offsets of what is shown inside an area."""
-        return render.fit(*self.size(page), width, height)
+        """Scale and offsets of what is shown inside an area, magnified when the deck is zoomed."""
+        scale, ox, oy = render.fit(*self.size(page), width, height)
+        zoom = self.deck.zoom
+        if zoom == 1.0:
+            return scale, ox, oy
+        cx, cy = self._zoom_center(page, width, height)
+        return scale * zoom, (ox - cx) * zoom + width / 2, (oy - cy) * zoom + height / 2
+
+    def _zoom_center(self, page: int, width: int, height: int) -> tuple[float, float]:
+        """The unzoomed area point that stays in the middle, kept inside the content where it can be."""
+        pw, ph = self.size(page)
+        scale, ox, oy = render.fit(pw, ph, width, height)
+        fx, fy = self.deck.zoom_at
+        zoom = self.deck.zoom
+        return (
+            _keep_inside(ox, ox + pw * scale, width / zoom, ox + fx * pw * scale),
+            _keep_inside(oy, oy + ph * scale, height / zoom, oy + fy * ph * scale),
+        )
 
     def draw(self, cr: cairo.Context, page: int, width: int, height: int) -> tuple[float, float, float]:
         """Paint the shown content with its ink and the laser dot; return the fit used."""
         if width <= 0 or height <= 0:  # an area squeezed to nothing has nothing to paint
             return self.fit(page, 1, 1)
+        zoom = self.deck.zoom
+        if zoom != 1.0:  # magnify around the chosen point; the content is then fitted as usual inside this
+            cx, cy = self._zoom_center(page, width, height)
+            cr.translate(width / 2, height / 2)
+            cr.scale(zoom, zoom)
+            cr.translate(-cx, -cy)
         fit = (
             render.draw_board(cr, width, height, self.deck.board_style)
             if self.deck.board
             else self.doc.draw(cr, page, width, height)
         )
-        render.draw_strokes(cr, self.ink.strokes(self.layer(page)), fit[0])
+        scale = fit[0] * zoom  # pen width and laser size stay constant on screen
+        render.draw_strokes(cr, self.ink.strokes(self.layer(page)), scale)
         if self.deck.laser is not None:
-            render.draw_laser(cr, self.deck.laser, self.size(page), fit[0], self.laser)
-        return fit
+            render.draw_laser(cr, self.deck.laser, self.size(page), scale, self.laser)
+        return self.fit(page, width, height)
 
     def to_layer(self, page: int, width: int, height: int, x: float, y: float) -> tuple[float, float]:
         """Convert widget coordinates to layer coordinates."""

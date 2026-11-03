@@ -12,6 +12,7 @@ from gi.repository import Adw, Gtk
 
 from lectos.i18n import noop, tr
 from lectos.model import layout as layouts
+from lectos.model.ink import COLORS
 
 PANEL_TITLES = {
     "notes": noop("Lecture notes"),
@@ -28,10 +29,19 @@ LAYOUT_TITLES = (
     (layouts.DRAW, noop("Drawing")),
 )
 MAX_TARGET_MIN = 24 * 60
-BEHAVIOURS = (  # (command, title, subtitle)
-    ("vim", noop("Vim keys"), noop("h j k l, :, / and friends")),
-    ("show-slide", noop("Show the slide for note hits"), noop("a search hit in the notes also previews its slide")),
-)
+BEHAVIOURS = (  # (command, host attribute, title, subtitle)
+    ("vim", "vim_on", noop("Vim keys"), noop("h j k l, :, / and friends (change keys: :bind, [keys] in options.toml)")),
+    (
+        "show-slide", "show_slide_on", noop("Show the slide for note hits"),
+        noop("a search hit in the notes also previews its slide"),
+    ),
+    (
+        "slide-times", "slide_times_on", noop("Time per slide"),
+        noop("shown in the overview, counted while the timer runs"),
+    ),
+    ("menubar", "menubar_on", noop("Menu bar"), noop("File ... Help; pressing Alt does the same")),
+)  # fmt: skip
+MIN_ZOOM, MAX_ZOOM = 1.2, 8.0
 
 
 class SettingsHost(Protocol):
@@ -43,6 +53,11 @@ class SettingsHost(Protocol):
     upcoming: int
     vim_on: bool
     show_slide_on: bool
+    slide_times_on: bool
+    menubar_on: bool
+    palette: tuple[str, ...]
+    notes_names: tuple[str, ...]
+    zoom_factor: float
 
     def execute(self, line: str) -> None:
         """Run a command line."""
@@ -58,18 +73,31 @@ class SettingsWindow(Adw.Window):
         super().__init__(title=tr("Settings"), transient_for=parent, modal=True, default_width=460, default_height=640)
         self.host = host
         self._syncing = False
+        self._notes_shown = ""
         self.panel_rows = {name: self._switch(tr(title), "", f"panel {name}") for name, title in PANEL_TITLES.items()}
         self.layout_row = Adw.ComboRow(title=tr("Layout"), model=Gtk.StringList.new([tr(t) for _, t in LAYOUT_TITLES]))
         self.layout_row.connect("notify::selected", self._layout_chosen)
         self.previous_row = self._spin(tr("Slides before the current one"), 0, layouts.MAX_PREVIOUS, "previous")
         self.upcoming_row = self._spin(tr("Slides after the current one"), 0, layouts.MAX_UPCOMING, "upcoming")
         self.target_row = self._spin(tr("Lecture length (minutes)"), 1, MAX_TARGET_MIN, "target")
-        self.behaviour_rows = {name: self._switch(tr(title), tr(sub), name) for name, title, sub in BEHAVIOURS}
+        self.behaviour_rows = {name: self._switch(tr(title), tr(sub), name) for name, _a, title, sub in BEHAVIOURS}
+        self.zoom_row = Adw.SpinRow.new_with_range(MIN_ZOOM, MAX_ZOOM, 0.5)
+        self.zoom_row.set_title(tr("Zoom factor"))
+        self.zoom_row.set_digits(1)
+        self.zoom_row.connect("notify::value", lambda r, _p: self._zoomed(r.get_value()))
+        self.palette_rows = {c: Adw.SwitchRow(title=tr(c)) for c in COLORS}  # read together by ``_palette_chosen``
+        for row in self.palette_rows.values():
+            row.connect("notify::active", lambda _r, _p: self._palette_chosen())
+        self.notes_row = Adw.EntryRow(title=tr("Notes file names (separated by spaces)"))
+        self.notes_row.set_show_apply_button(True)
+        self.notes_row.connect("apply", lambda r: self._notes_named(r.get_text()))
         page = Adw.PreferencesPage()
         for title, rows in (
             (tr("Show on screen"), self.panel_rows.values()),
             (tr("Layout"), (self.layout_row, self.previous_row, self.upcoming_row)),
-            (tr("Behaviour"), (self.target_row, *self.behaviour_rows.values())),
+            (tr("Behaviour"), (self.target_row, *self.behaviour_rows.values(), self.zoom_row)),
+            (tr("Pen palette"), self.palette_rows.values()),
+            (tr("Files"), (self.notes_row,)),
         ):
             group = Adw.PreferencesGroup(title=title)
             for row in rows:
@@ -99,6 +127,20 @@ class SettingsWindow(Adw.Window):
         if not self._syncing:
             self.host.execute(f"{command} {value}")
 
+    def _zoomed(self, value: float) -> None:
+        if not self._syncing:
+            self.host.execute(f"zoom-factor {value:.1f}")
+
+    def _palette_chosen(self) -> None:
+        names = [c for c, row in self.palette_rows.items() if row.get_active()]
+        if not self._syncing and names:
+            self.host.execute("palette " + " ".join(names))
+        elif not self._syncing:
+            self.sync()  # at least one colour must stay
+
+    def _notes_named(self, text: str) -> None:
+        self.host.execute(f"notes-names {text.strip() or 'none'}")  # "apply" only comes from the user
+
     def _layout_chosen(self, row: Adw.ComboRow, _param: object) -> None:
         if not self._syncing:
             self.host.execute(f"layout {LAYOUT_TITLES[row.get_selected()][0]}")
@@ -114,7 +156,14 @@ class SettingsWindow(Adw.Window):
             self.previous_row.set_value(host.previous)
             self.upcoming_row.set_value(host.upcoming)
             self.target_row.set_value(host.target_minutes())
-            self.behaviour_rows["vim"].set_active(host.vim_on)
-            self.behaviour_rows["show-slide"].set_active(host.show_slide_on)
+            for command, attribute, _title, _sub in BEHAVIOURS:
+                self.behaviour_rows[command].set_active(getattr(host, attribute))
+            self.zoom_row.set_value(host.zoom_factor)
+            for color, row in self.palette_rows.items():
+                row.set_active(color in host.palette)
+            names = " ".join(host.notes_names)
+            if names != self._notes_shown:  # unchanged: leave what is being typed alone
+                self._notes_shown = names
+                self.notes_row.set_text(names)
         finally:
             self._syncing = False

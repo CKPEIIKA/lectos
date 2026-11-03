@@ -1,6 +1,8 @@
+import json
+
 import pytest
 
-from lectos.model.deck import Deck, Timer, format_seconds
+from lectos.model.deck import CENTER, MAX_ZOOM, Deck, SlideTimes, Timer, format_seconds
 
 PAGES = 10
 LAST = PAGES - 1
@@ -178,3 +180,48 @@ def test_timer_load_ignores_anything_that_is_not_a_dict() -> None:
     timer.load("garbage")
     timer.load(None)
     assert (timer.target_min, timer.running) == (7, False)
+
+
+def test_slide_times_credit_the_projected_slide_only_while_running() -> None:
+    times = SlideTimes()
+    times.mark(0.0, 0, True)
+    times.mark(10.0, 1, True)  # 10 s on slide 0
+    times.mark(25.0, 1, False)  # 15 s on slide 1, then paused
+    times.mark(100.0, 1, False)  # paused time counts for nobody
+    assert (times.of(0), times.of(1), times.of(2)) == (10.0, 15.0, 0.0)
+    times.clear()
+    assert times.of(0) == 0.0
+
+
+def test_slide_times_survive_a_restart_and_ignore_garbage() -> None:
+    times = SlideTimes()
+    times.mark(0.0, 2, True)
+    times.mark(5.0, 2, True)
+    saved = json.loads(json.dumps(times.to_dict()))
+    other = SlideTimes()
+    other.load(saved)
+    assert (other.of(2), other.page, other.stamp) == (5.0, 2, 5.0)
+    other.mark(8.0, 2, False)
+    assert other.of(2) == 8.0
+    for bad in (None, [], {"totals": 1}, {"totals": {}, "page": "x"}, {"totals": {}, "page": 0, "stamp": "no"}):
+        untouched = SlideTimes()
+        untouched.load(bad)
+        assert untouched.totals == {}
+    mixed = SlideTimes()
+    mixed.load({"totals": {"1": 3, "x": 4, "2": -1, "3": "no"}, "page": 1, "stamp": None})
+    assert mixed.totals == {1: 3}
+
+
+def test_zoom_is_clamped_and_ends_when_the_projected_slide_changes() -> None:
+    deck = Deck(PAGES)
+    deck.set_zoom(2.0, (0.2, 0.3))
+    assert (deck.zoom, deck.zoom_at) == (2.0, (0.2, 0.3))
+    deck.set_zoom(99.0)
+    assert (deck.zoom, deck.zoom_at) == (MAX_ZOOM, CENTER)
+    deck.set_zoom(1.0)
+    assert deck.zoom == 1.0  # below the minimum means off
+    deck.set_zoom(2.0)
+    deck.peek(4)  # the presenter looks elsewhere; the audience slide is the same
+    assert deck.zoom == 2.0
+    deck.goto(4)
+    assert deck.zoom == 1.0
