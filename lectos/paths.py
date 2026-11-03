@@ -21,11 +21,11 @@ def unique(path: Path) -> Path:
 
 
 NOTES_SUFFIXES = (".tex", ".md")
-GENERIC_NOTES = ("notes.tex", "notes.md")
+GENERIC_NOTES = ("notes.tex", "notes.md", "speaker_notes.md")
 
 
 def notes_for(pdf: Path) -> Path | None:
-    """Notes next to the slides: ``slides.tex`` or ``slides.md``, else ``notes.tex`` or ``notes.md`` in the folder."""
+    """Notes next to the slides: ``slides.tex`` or ``slides.md``, else ``notes.tex``, ``notes.md`` or ``speaker_notes.md`` in the folder."""
     names = [pdf.with_suffix(suffix).name for suffix in NOTES_SUFFIXES] + list(GENERIC_NOTES)
     return next((found for name in names if (found := pdf.with_name(name)).is_file()), None)
 

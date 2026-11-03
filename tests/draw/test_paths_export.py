@@ -78,6 +78,8 @@ def test_notes_are_found_next_to_the_slides(tmp_path: Path) -> None:
 
     pdf = tmp_path / "talk.pdf"
     assert notes_for(pdf) is None
+    (tmp_path / "speaker_notes.md").write_text("x")
+    assert notes_for(pdf) == tmp_path / "speaker_notes.md"
     (tmp_path / "notes.md").write_text("x")
     assert notes_for(pdf) == tmp_path / "notes.md"
     (tmp_path / "talk.md").write_text("x")
