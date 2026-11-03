@@ -2,6 +2,12 @@
 
 Completed work only. Record meaningful outcomes and validation evidence, newest first.
 
+## 2026-11-03: crash audit
+
+- Randomized stress runs of the real app (layouts, panels, resize, fullscreen, slide replacement, extra windows, rebuilt PDFs; 40 runs of 500 steps, seeds 100-139, plus earlier batches) found and fixed: a scroll-restore idle callback holding the adjustment of an already destroyed text view (aborts GTK in `gtktextview.c`); drawing into a zero-size area (cairo "invalid matrix"); the palette forcing a negative header width at narrow window sizes.
+- Deferred callbacks (`_after_layout`, `_after_resize`, `_restore_scroll`, `_math_ready`, `_recompile_math`) are no-ops once the window is gone; regression tests cover them, shrinking decks and squeezed areas. 511 tests, 100% coverage.
+- Open: one run in about sixty segfaulted inside libgtk-4 4.22.5 (a function reading `gdk_event_get_surface(event)` without a NULL check, same address range as the Oct 13 field crash). Not reproducible on demand; see `docs/TODO.md`.
+
 ## 2026-11-03: shape tools and pen palette
 
 - The drawing toolbar (colour swatches, shape drop-down, width slider, buttons) is a console panel `palette` shown under the slide in every layout; hide it with `panel palette off`, Settings or `hide`; `[drawing] palette` picks the colours.

@@ -15,6 +15,10 @@ Unfinished work only. Keep tasks concrete, prioritized, and verifiable. Move com
 - [ ] Rebindable keys (`[keys]` table) and Settings fields for notes file names and the palette.
 - [ ] Pen pressure curve (`[drawing] pressure`), tablet button mapping, palm rejection option.
 
+## P0: crash audit follow-up
+
+- [ ] A rare segfault in libgtk-4 (event with no surface) remains: seen once in the field (Oct 13) and once in ~60 stress runs. Find a trigger (pointer over a window that closes or is replaced?) and add a mitigation or report it upstream. Core dumps: `coredumpctl`; `crash.log` in the state folder now records Python tracebacks of fatal signals.
+
 ## P1: presenter features
 
 - [ ] Layout: user-defined arrangements beyond compact/wide (which panes where), and a layout for a vertical portrait screen.

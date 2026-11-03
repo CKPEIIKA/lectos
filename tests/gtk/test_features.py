@@ -450,3 +450,28 @@ def test_deferred_callbacks_never_touch_a_scroller_that_is_gone(rig, pump) -> No
     assert c._math_ready({}, c._notes_generation) is False
     assert c._recompile_math() is False
     pump(0.3)
+
+
+def test_a_recompiled_deck_with_fewer_slides_leaves_every_view_valid(build_rig, pdf_maker, pump) -> None:
+    import os
+
+    pdf = pdf_maker([{} for _ in range(6)], name="live.pdf")
+    rig = build_rig(notes=False, pdf=pdf)
+    c, core = rig.console, rig.core
+    c.present()
+    c.execute("layout wide")
+    c.execute("last")
+    c.execute("overview")
+    pump(0.2)
+    pdf_maker([{} for _ in range(2)], name="live.pdf")  # the lecturer rebuilt the slides: shorter now
+    os.utime(pdf, ns=(1, 1))  # a different modification time, however fast the rebuild was
+    assert core.doc.refresh() is True
+    core.deck.set_pages(core.doc.pages)
+    pump(0.3)
+    assert (core.deck.pages, core.deck.page, core.deck.view) == (2, 1, 1)
+    c.execute("main")
+    c.execute("layout compact")
+    c.execute("next")
+    c.execute("last")
+    pump(0.2)
+    assert c.deck.view == 1
