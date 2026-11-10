@@ -1,11 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <rect x="8" y="16" width="112" height="96" rx="12" fill="#1c71d8"/>
-  <rect x="18" y="26" width="58" height="42" rx="4" fill="#ffffff"/>
-  <rect x="26" y="34" width="42" height="6" rx="2" fill="#99c1f1"/>
-  <rect x="26" y="46" width="30" height="4" rx="2" fill="#c0bfbc"/>
-  <rect x="26" y="55" width="36" height="4" rx="2" fill="#c0bfbc"/>
-  <rect x="84" y="26" width="26" height="42" rx="4" fill="#99c1f1"/>
-  <rect x="18" y="78" width="92" height="5" rx="2.5" fill="#ffffff"/>
-  <rect x="18" y="89" width="92" height="5" rx="2.5" fill="#ffffff"/>
-  <rect x="18" y="100" width="60" height="5" rx="2.5" fill="#ffffff"/>
+  <!-- A presenter terminal connected by cable to the audience projector. -->
+  <path d="M62 82v10c0 12 8 18 18 18h12c8 0 12-5 12-13V87" fill="none" stroke="#443d35" stroke-width="7" stroke-linecap="square"/>
+  <path d="M62 82v10c0 12 8 18 18 18h12c8 0 12-5 12-13V87" fill="none" stroke="#9b8e72" stroke-width="3"/>
+  <path d="M9 19h59v61H9z" fill="#d8cba9" stroke="#443d35" stroke-width="5"/>
+  <path d="M15 25h47v39H15z" fill="#555e4a"/>
+  <path d="M19 29h39v31H19z" fill="#142c24"/>
+  <path d="M23 33h20v15H23z" fill="#8fc978"/>
+  <path d="M26 44l5-6 4 3 4-5 2 8z" fill="#264c36"/>
+  <path d="M46 34h8v3h-8zm0 6h8v3h-8zm0 6h6v3h-6zM23 53h27v3H23z" fill="#9ad27e"/>
+  <path d="M15 70h25v4H15zm31 0h4v4h-4zm7 0h4v4h-4z" fill="#786e5a"/>
+  <path d="M26 82h25v7H26z" fill="#a99b7b"/>
+  <path d="M12 90h53l6 11v4H6v-4z" fill="#d8cba9" stroke="#443d35" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M16 95h5v3h-5zm8 0h5v3h-5zm8 0h5v3h-5zm8 0h5v3h-5zm8 0h5v3h-5zm8 0h5v3h-5zM20 101h37v3H20z" fill="#6c6252"/>
+  <path d="M79 55h36l7 7v21l-7 7H79z" fill="#d8cba9" stroke="#443d35" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M83 60h12v4H83zm0 8h10v3H83zm0 7h10v3H83z" fill="#7b715e"/>
+  <circle cx="106" cy="72" r="12" fill="#51483d"/>
+  <circle cx="106" cy="72" r="8" fill="#d48838" stroke="#223b3b" stroke-width="3"/>
+  <path d="M103 68h3v3h-3z" fill="#ffe1a0"/>
+  <path d="M83 90h7v5h-7zm27 0h7v5h-7z" fill="#443d35"/>
 </svg>

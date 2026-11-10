@@ -1,7 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <rect x="10" y="14" width="108" height="76" rx="8" fill="#241f31"/>
-  <rect x="16" y="20" width="96" height="64" rx="4" fill="#ffffff"/>
-  <path d="M52 36 L52 68 L80 52 Z" fill="#e66100"/>
-  <rect x="58" y="90" width="12" height="14" fill="#5e5c64"/>
-  <rect x="34" y="104" width="60" height="8" rx="4" fill="#5e5c64"/>
+  <!-- Audience projector: a chunky desktop projector and an amber beam. -->
+  <path d="M89 44l27-13v51L89 69z" fill="#f3bf63"/>
+  <path d="M94 49l18-8v31l-18-8z" fill="#ffe2a2"/>
+  <path d="M15 35h66l12 11v36L81 93H15z" fill="#443d35"/>
+  <path d="M13 31h66l12 11v36L79 89H13z" fill="#d8cba9" stroke="#443d35" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M18 38h28v6H18zm0 12h22v4H18zm0 9h22v4H18zm0 9h22v4H18z" fill="#7b715e"/>
+  <circle cx="65" cy="60" r="22" fill="#51483d"/>
+  <circle cx="65" cy="60" r="16" fill="#223b3b" stroke="#a29370" stroke-width="3"/>
+  <circle cx="65" cy="60" r="10" fill="#d48838"/>
+  <path d="M59 53h5v5h-5zm7 7h5v5h-5z" fill="#ffe1a0"/>
+  <path d="M20 82h8v4h-8zm12 0h8v4h-8z" fill="#96b77b"/>
+  <path d="M23 91h12v9H23zm47 0h12v9H70z" fill="#443d35"/>
+  <path d="M19 99h20v5H19zm47 0h20v5H66z" fill="#776c58"/>
 </svg>

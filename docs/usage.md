@@ -8,9 +8,13 @@ The full reference. For installation and the first run see the [README](../READM
 
 ![The wide layout on a big screen: slide with ink and laser, audience and next previews, notes with typeset math, and the filmstrip](screenshots/wide.png)
 
-| Compact layout with the search panel open | What the audience sees |
+| Compact layout with search (palette hidden) | What the audience sees |
 |---|---|
 | ![The compact layout for a notebook, with search results above the slides](screenshots/compact.png) | ![The projector window: the slide with the red ink circle](screenshots/projector.png) |
+
+| Start window | Example standby screen |
+|---|---|
+| ![The start window with the CRT and projector logo](screenshots/start.png) | ![The projector showing the please stand by test card](screenshots/standby.png) |
 
 | console \ projector | `gtk` (our window) | `zathura` | `none` |
 |---|---|---|---|
@@ -21,6 +25,8 @@ The full reference. For installation and the first run see the [README](../READM
 - **zathura projector**: a plain Zathura window driven over D-Bus (`gdbus`); follows the deck, freeze works, fullscreen via `fullscreen`. It cannot show blackout, chalkboard, ink or laser, so those commands answer "not supported by this projector".
 - **gtk console**: all features below, including drawing and the laser on the preview. Needs GTK as above.
 - **tui console** (`lectos-tui`, or `--console tui`): standard-library Python in the terminal, no GTK unless combined with the gtk projector. Slide previews use `pdftoppm` and `chafa` (Unicode block characters; skipped in terminals narrower than 90 columns or when the tools are missing). Notes are shown as styled text; math is approximated with Unicode (`∂ₜ U + ∇·F(U) = S(U)`), not typeset. Overview and search results are lists. It has no laser, no `show-slide`, no mouse; with the gtk projector you can still draw on the projector window with a pen (or a mouse after `draw on`). Keys are always vim-style plus arrows; `:` opens the command line with Tab completion; `:q` quits (Ctrl-C also saves and quits). `?` or `:help` opens a list of every command usable with this projector (usage, description, key; commands that need the GTK console or a projector with more features are marked); Enter on an entry starts typing it, and `:help NAME` describes one command. With the gtk projector, GTK's own messages are written to `$XDG_STATE_HOME/lectos/<id>.log` so they cannot garble the screen.
+
+The GTK presenter and projector windows request different icons. Some desktop environments show a shared application icon instead of individual window icons.
 
 The GTK console opens a console window; with the gtk projector it also opens the projector window. It follows the GNOME design guidelines through libadwaita (1.4 or newer): a toolbar view with header bar, banners, toasts and boxed lists, and it follows the system light/dark setting. State the audience cares about is always visible: **banners** at the top say when the projector is frozen (with the slide it is stuck on), blacked out, or showing the chalkboard, each with a button to undo it; the matching header toggles light up (blackout in red); the footer shows the current pen, eraser, laser and board. Messages appear as toasts. The footer's right side shows how you stand against the plan (`on time`, `ahead 2:10`, `behind 3:40`: every slide gets an equal share of the lecture length and a slide's own share counts as on time), the estimated finish time at your current pace (`ends 15:48`), and the clock. `help` (key `?`) opens a page listing every command with usage and key; pick a row to start typing it.
 
@@ -76,7 +82,7 @@ Options live in `$XDG_CONFIG_HOME/lectos/options.toml` (or `--config FILE`); a m
 ```toml
 [blackout]
 image = "standby.svg"      # relative to this file, absolute, or ~/...; any format GTK can load
-text = "Please stand by…"
+text = ""                  # optional caption; the sample image already has a message
 background = "#101820"     # #rrggbb
 text_color = "#f2f2f2"
 
@@ -89,7 +95,7 @@ console = "gtk"            # or "tui"
 projector = "gtk"          # or "zathura"
 ```
 
-See `examples/options.toml` and `examples/standby.svg`. Status: tested with unit tests and by driving both windows on GNOME/Wayland with a 6-page and a 411-page PDF. Not tested: real pen pressure and the eraser end, fullscreen on a second monitor, a real lecture. With one monitor the projector stays windowed.
+See `examples/options.toml` and the retro test card in `examples/standby.svg`. Without blackout options the screen remains plain black. Status: tested with unit tests and by driving both windows on GNOME/Wayland with a 6-page and a 411-page PDF. Not tested: real pen pressure and the eraser end, fullscreen on a second monitor, a real lecture. With one monitor the projector stays windowed.
 
 ## Opening slides
 

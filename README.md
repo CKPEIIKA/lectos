@@ -1,5 +1,7 @@
 # LECTOS(1)
 
+![lectos logo: a CRT connected to a projector](lectos/gtk/icons/hicolor/scalable/apps/lectos.svg)
+
 ## NAME
 
 `lectos` — Linux presenter console and projector for PDF slides and lecture notes

@@ -2,6 +2,12 @@
 
 Completed work only. Record meaningful outcomes and validation evidence, newest first.
 
+## 2026-11-10: retro logo, window icons and standby
+
+- Created a CRT-to-projector logo and a separate projector icon. Replaced the sample standby image with a television test card and documented that per-window icons depend on the desktop environment.
+- Validation: rendered and inspected the SVGs; Ruff, formatting and Ty passed, as did all 538 tests with 100% coverage.
+- Captured and inspected the current GTK presenter and projector windows on an isolated display with the sample deck; added the start window and sample standby screen.
+
 ## 2026-11-10: filmstrip pointer-crossing crash
 
 - Avoid rebuilding filmstrip thumbnails for laser and other updates that leave their contents and geometry unchanged. Defer deck-triggered rebuilds until after input callbacks, including a thumbnail's own press handler.

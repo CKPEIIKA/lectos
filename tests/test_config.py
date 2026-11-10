@@ -58,7 +58,8 @@ def test_invalid_options_name_the_problem(tmp_path: Path, text: str, message: st
 def test_sample_options_are_valid() -> None:
     opts = config.load(ROOT / "options.toml")
     assert opts.blackout.image == ROOT / "standby.svg"
-    assert opts.blackout.text.startswith("Please stand by")
+    assert opts.blackout.text == ""
+    assert opts.blackout.custom is True
 
 
 def test_ui_section_selects_console_and_projector(tmp_path: Path) -> None:

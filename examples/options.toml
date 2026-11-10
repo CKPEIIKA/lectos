@@ -4,7 +4,7 @@
 [blackout]
 # Shown on the projector instead of plain black. Both keys are optional.
 image = "standby.svg"          # path relative to this file, absolute, or ~/...
-text = "Please stand by…"
+text = ""                      # optional caption; the sample image already has a message
 background = "#101820"         # #rrggbb
 text_color = "#f2f2f2"
 
