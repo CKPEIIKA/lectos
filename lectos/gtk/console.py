@@ -228,6 +228,8 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._stage_areas: list[Gtk.DrawingArea] = []
         self._plain_areas: list[Gtk.DrawingArea] = []
         self._strip_box: Gtk.Box | None = None
+        self._strip_signature: tuple[object, ...] | None = None
+        self._strip_refresh_pending = False
         self._toggles: dict[str, Gtk.ToggleButton] = {}
         self._flag_actions: dict[str, Gio.SimpleAction] = {}
         self._radio_actions: dict[str, Gio.SimpleAction] = {}
@@ -827,6 +829,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self._stage_areas.clear()
         self._plain_areas.clear()
         self._strip_box = self.paned = self._drawbar = None
+        self._strip_signature = None
         child = self.main_holder.get_first_child()
         if child is not None:
             self.main_holder.remove(child)
@@ -877,6 +880,11 @@ class ConsoleWindow(Adw.ApplicationWindow):
         tw = layouts.thumb_width(max(self.get_width(), 400), len(pages))
         pw, ph = self.doc.page_size(0)
         th = max(40, round(tw * ph / pw))
+        signature = (tuple(pages), tw, th, self.deck.view, self.deck.page, self.doc.version)
+        # Removing a crossing-event target while handling pointer motion can crash GTK.
+        if signature == self._strip_signature:
+            return
+        self._strip_signature = signature
         child = box.get_first_child()
         while child is not None:
             following = child.get_next_sibling()
@@ -884,6 +892,17 @@ class ConsoleWindow(Adw.ApplicationWindow):
             child = following
         for page in pages:
             box.append(self._strip_thumb(page, tw, th))
+
+    def _queue_strip_refresh(self) -> None:
+        if not self._strip_refresh_pending:
+            self._strip_refresh_pending = True
+            GLib.idle_add(self._idle_refresh_strip)
+
+    def _idle_refresh_strip(self) -> bool:
+        self._strip_refresh_pending = False
+        if self._alive:
+            self._refresh_strip()
+        return False
 
     def _strip_thumb(self, page: int, width: int, height: int) -> Gtk.DrawingArea:
         area = Gtk.DrawingArea(
@@ -958,7 +977,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
         self.title_pos.set_label(f"{self.deck.view + 1} / {self.deck.pages}")
         for area in (*self._stage_areas, *self._plain_areas):
             area.queue_draw()
-        self._refresh_strip()
+        self._queue_strip_refresh()
         self._sync_actions()
         self._mark_current_section()
         self._mark_dirty()
@@ -1470,7 +1489,7 @@ class ConsoleWindow(Adw.ApplicationWindow):
             self._set_status(tr("{name} needs a number 0..{maximum}").format(name=name, maximum=maximum))
             return
         setattr(self, name, layouts.clamp_count(int(arg), maximum))
-        self._refresh_strip()
+        self._queue_strip_refresh()
         self._sync_actions()
         self._mark_dirty()
 

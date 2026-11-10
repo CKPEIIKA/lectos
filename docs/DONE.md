@@ -2,6 +2,11 @@
 
 Completed work only. Record meaningful outcomes and validation evidence, newest first.
 
+## 2026-11-10: filmstrip pointer-crossing crash
+
+- Avoid rebuilding filmstrip thumbnails for laser and other updates that leave their contents and geometry unchanged. Defer deck-triggered rebuilds until after input callbacks, including a thumbnail's own press handler.
+- Validation: regression tests failed before the fixes; the full quality gate and filmstrip tests on the affected machine's Wayland session passed.
+
 ## 2026-11-03: zoom, time per slide, rebindable keys, more Settings
 
 - `zoom` (key `x`, `[projector] zoom_factor`): the shared `Stage` magnifies around the laser or the middle, so input mapping and pen size stay exact; ends on a new projected slide; gated by a `zoom` projector capability.

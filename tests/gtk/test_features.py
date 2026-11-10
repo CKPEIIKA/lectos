@@ -445,6 +445,7 @@ def test_deferred_callbacks_never_touch_a_scroller_that_is_gone(rig, pump) -> No
     pump(0.1)
     assert c._alive is False
     assert c._after_resize() is False
+    assert c._idle_refresh_strip() is False
     assert c._after_layout(0.0) is False
     assert c._restore_scroll(1.0) is False
     assert c._math_ready({}, c._notes_generation) is False

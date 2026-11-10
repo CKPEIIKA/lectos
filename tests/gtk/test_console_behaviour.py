@@ -206,12 +206,13 @@ def test_after_a_layout_change_the_notes_realign_to_the_current_slide(rig, plain
     p._after_layout(0.0)
 
 
-def test_the_filmstrip_follows_the_view_and_thumbnails_mark_view_and_live_slides(rig) -> None:
+def test_the_filmstrip_follows_the_view_and_thumbnails_mark_view_and_live_slides(rig, pump) -> None:
     c = rig.console
     c.layout_mode = "wide"
     c._apply_layout()
     first = c._strip_box.get_first_child()
     c.deck.goto(5)
+    pump(0.05)
     assert c._strip_box.get_first_child() is not first  # rebuilt around the new view
     c.deck.set_frozen(True)
     c.deck.goto(2)  # the viewed slide and the projected one now differ
@@ -222,6 +223,33 @@ def test_the_filmstrip_follows_the_view_and_thumbnails_mark_view_and_live_slides
     c.layout_mode = "compact"
     c._apply_layout()
     c._refresh_strip()  # no strip in the compact layout: nothing to do
+
+
+def test_laser_motion_keeps_filmstrip_widgets_alive(rig, pump) -> None:
+    c = rig.console
+    c.layout_mode = "wide"
+    c._apply_layout()
+    first = c._strip_box.get_first_child()
+    c.deck.set_laser(None)
+    c.deck.set_laser_on(True)
+    c.deck.set_laser((0.5, 0.5))
+    c.deck.set_laser(None)
+    pump(0.05)
+    assert c._strip_box.get_first_child() is first
+    c.deck.goto(5)
+    pump(0.05)
+    assert c._strip_box.get_first_child() is not first
+
+
+def test_page_change_defers_filmstrip_removal_until_after_the_input_event(rig, pump) -> None:
+    c = rig.console
+    c.layout_mode = "wide"
+    c._apply_layout()
+    first = c._strip_box.get_first_child()
+    c.deck.goto(5)
+    assert c._strip_box.get_first_child() is first
+    pump(0.05)
+    assert c._strip_box.get_first_child() is not first
 
 
 # ---- header entry, timer, fullscreen ----
